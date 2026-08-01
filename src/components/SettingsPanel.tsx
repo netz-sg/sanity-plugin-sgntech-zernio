@@ -247,11 +247,11 @@ export function SettingsPanel(): React.JSX.Element {
             }}
           >
             {accounts.map((account) => (
-              <Card key={account._id} padding={3} radius={2} border>
+              <Card key={account.accountId} padding={3} radius={2} border>
                 <Flex align="center" gap={3}>
                   <Stack gap={2} flex={1}>
                     <Text size={1} weight="medium">
-                      {account.name ?? account.username ?? account._id}
+                      {account.name ?? account.username ?? account.accountId}
                     </Text>
                     <Text size={0} muted>
                       {account.platform}

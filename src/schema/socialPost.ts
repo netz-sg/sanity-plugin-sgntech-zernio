@@ -302,7 +302,7 @@ export function createSettingsType() {
             type: 'object',
             name: 'account',
             fields: [
-              defineField({name: '_id', type: 'string'}),
+              defineField({name: 'accountId', title: 'Account id', type: 'string'}),
               defineField({name: 'platform', type: 'string'}),
               defineField({name: 'name', type: 'string'}),
               defineField({name: 'username', type: 'string'}),

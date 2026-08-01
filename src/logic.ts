@@ -42,6 +42,7 @@ export {
 } from './lib/calendar'
 export {keyWarning, SETTINGS_ID, SETTINGS_TYPE} from './lib/settings'
 export type {
+  CachedAccount,
   PostKind,
   PostStatus,
   PublishResult,

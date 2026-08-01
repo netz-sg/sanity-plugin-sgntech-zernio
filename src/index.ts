@@ -119,6 +119,7 @@ export {
   writeSettings,
 } from './lib/settings'
 export type {
+  CachedAccount,
   PostKind,
   PostStatus,
   PublishResult,

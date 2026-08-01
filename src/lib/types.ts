@@ -134,6 +134,23 @@ export interface SocialPostValue {
 }
 
 /**
+ * A connected account as it is cached in the settings document.
+ *
+ * Deliberately not the API shape: Sanity reserves field names starting with an
+ * underscore, so Zernio's `_id` is stored as `accountId`.
+ *
+ * @public
+ */
+export interface CachedAccount {
+  accountId: string
+  platform: string
+  name?: string
+  username?: string
+  profileId?: string
+  disconnected?: boolean
+}
+
+/**
  * Settings kept in the dataset, so a Studio can be set up without touching code.
  *
  * @public
@@ -148,7 +165,7 @@ export interface ZernioSettings {
   /** Default timezone for scheduling, e.g. `Europe/Berlin`. */
   timezone?: string
   /** Cached accounts, so the document form works without a round trip. */
-  accounts?: ZernioAccount[]
+  accounts?: CachedAccount[]
   /** When the account cache was last refreshed. */
   accountsRefreshedAt?: string
 }

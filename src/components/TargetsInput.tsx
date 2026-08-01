@@ -3,13 +3,13 @@ import {useCallback} from 'react'
 import {type ArrayOfObjectsInputProps, set, unset} from 'sanity'
 
 import {useZernioSettings} from '../hooks/useZernio'
-import type {SocialTarget, ZernioAccount} from '../lib/types'
+import type {CachedAccount, SocialTarget} from '../lib/types'
 
 /** Only the platforms this plugin validates and previews. */
 const SUPPORTED = new Set(['instagram', 'facebook'])
 
-function labelOf(account: ZernioAccount): string {
-  return account.name || account.username || account._id
+function labelOf(account: CachedAccount): string {
+  return account.name || account.username || account.accountId
 }
 
 /**
@@ -29,11 +29,11 @@ export function TargetsInput(props: ArrayOfObjectsInputProps): React.JSX.Element
   )
 
   const toggle = useCallback(
-    (account: ZernioAccount, checked: boolean) => {
+    (account: CachedAccount, checked: boolean) => {
       // Read from props rather than a derived variable: the callback must not
       // change on every render, or the checkboxes remount while clicking.
       const current = (value ?? []) as SocialTarget[]
-      const rest = current.filter((target) => target.accountId !== account._id)
+      const rest = current.filter((target) => target.accountId !== account.accountId)
 
       if (!checked) {
         onChange(rest.length > 0 ? set(rest) : unset())
@@ -44,9 +44,9 @@ export function TargetsInput(props: ArrayOfObjectsInputProps): React.JSX.Element
         set([
           ...rest,
           {
-            _key: account._id,
+            _key: account.accountId,
             _type: 'target',
-            accountId: account._id,
+            accountId: account.accountId,
             platform: (account.platform ?? '').toLowerCase(),
             label: labelOf(account),
           },
@@ -78,11 +78,11 @@ export function TargetsInput(props: ArrayOfObjectsInputProps): React.JSX.Element
   return (
     <Stack gap={2}>
       {accounts.map((account) => {
-        const checked = selected.some((target) => target.accountId === account._id)
+        const checked = selected.some((target) => target.accountId === account.accountId)
 
         return (
           <Card
-            key={account._id}
+            key={account.accountId}
             padding={3}
             radius={2}
             border

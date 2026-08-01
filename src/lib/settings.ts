@@ -1,6 +1,6 @@
 import type {SanityClient} from 'sanity'
 
-import type {ZernioAccount, ZernioSettings} from './types'
+import type {CachedAccount, ZernioAccount, ZernioSettings} from './types'
 
 /**
  * Document id the settings live under. A fixed id keeps it a singleton — there
@@ -56,17 +56,17 @@ export async function cacheAccounts(
   client: SanityClient,
   accounts: ZernioAccount[],
 ): Promise<void> {
-  await writeSettings(client, {
-    accounts: accounts.map((account) => ({
-      _id: account._id,
-      platform: account.platform,
-      name: account.name,
-      username: account.username,
-      profileId: account.profileId,
-      disconnected: account.disconnected,
-    })),
-    accountsRefreshedAt: new Date().toISOString(),
-  })
+  const cached: CachedAccount[] = accounts.map((account) => ({
+    // `_id` from the API becomes `accountId`: Sanity reserves leading underscores.
+    accountId: account._id,
+    platform: account.platform,
+    name: account.name,
+    username: account.username,
+    profileId: account.profileId,
+    disconnected: account.disconnected,
+  }))
+
+  await writeSettings(client, {accounts: cached, accountsRefreshedAt: new Date().toISOString()})
 }
 
 /**
