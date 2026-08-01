@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Card,
   Container,
   Flex,
@@ -12,9 +13,11 @@ import {
   Text,
 } from '@sanity/ui'
 import {useCallback, useState} from 'react'
+import {useClient} from 'sanity'
 import {useRouter} from 'sanity/router'
 
 import {usePosts} from '../hooks/usePosts'
+import {useRemotePosts} from '../hooks/useRemotePosts'
 import {useZernioSettings} from '../hooks/useZernio'
 import type {SocialPostValue} from '../lib/types'
 import {CalendarView} from './CalendarView'
@@ -38,10 +41,39 @@ export interface ZernioToolProps {
 export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Element {
   const documentType = props.options?.documentType ?? 'socialPost'
   const router = useRouter()
+  const client = useClient({apiVersion: '2024-10-01'})
 
   const [tab, setTab] = useState<'calendar' | 'posts' | 'settings'>('calendar')
+  const [generation, setGeneration] = useState(0)
   const {settings, loading: settingsLoading} = useZernioSettings()
   const {posts, loading, reload} = usePosts(documentType)
+  const {remote, error: remoteError} = useRemotePosts(posts, generation)
+
+  const refresh = useCallback(() => {
+    reload()
+    setGeneration((current) => current + 1)
+  }, [reload])
+
+  const create = useCallback(
+    (dayKey?: string) => {
+      const scheduledFor = dayKey ? new Date(`${dayKey}T12:00:00`).toISOString() : undefined
+      void client
+        .create({
+          _type: documentType,
+          title: 'New post',
+          kind: 'feed',
+          status: 'draft',
+          timezone: settings.timezone,
+          ...(scheduledFor ? {scheduledFor} : {}),
+        })
+        .then((created) => {
+          router.navigateIntent('edit', {id: created._id, type: documentType})
+          return undefined
+        })
+        .catch(() => undefined)
+    },
+    [client, documentType, router, settings.timezone],
+  )
 
   const open = useCallback(
     (post: SocialPostValue) => {
@@ -61,7 +93,15 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
           <Heading size={2}>Zernio</Heading>
           <Box flex={1} />
           {(loading || settingsLoading) && <Spinner muted />}
+          <Button text="Refresh" mode="ghost" onClick={refresh} />
+          <Button text="New post" tone="primary" onClick={() => create()} />
         </Flex>
+
+        {remoteError && (
+          <Card padding={3} radius={2} border tone="caution">
+            <Text size={1}>Zernio could not be read: {remoteError}</Text>
+          </Card>
+        )}
 
         {!configured && !settingsLoading && (
           <Card padding={4} radius={2} border tone="caution">
@@ -100,11 +140,17 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
         </TabList>
 
         <TabPanel id="calendar-panel" aria-labelledby="calendar-tab" hidden={tab !== 'calendar'}>
-          <CalendarView posts={posts} onOpen={open} onChanged={reload} />
+          <CalendarView
+            posts={posts}
+            remote={remote}
+            onOpen={open}
+            onChanged={refresh}
+            onCreate={create}
+          />
         </TabPanel>
 
         <TabPanel id="posts-panel" aria-labelledby="posts-tab" hidden={tab !== 'posts'}>
-          <PostList posts={posts} onOpen={open} onChanged={reload} />
+          <PostList posts={posts} remote={remote} onOpen={open} onChanged={refresh} />
         </TabPanel>
 
         <TabPanel id="settings-panel" aria-labelledby="settings-tab" hidden={tab !== 'settings'}>

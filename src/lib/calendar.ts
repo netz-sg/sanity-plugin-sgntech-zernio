@@ -1,4 +1,4 @@
-import type {SocialPostValue} from './types'
+import type {RemotePost, SocialPostValue} from './types'
 
 /**
  * One day in the calendar grid.
@@ -100,6 +100,47 @@ export function postsByDay(posts: SocialPostValue[]): Map<string, SocialPostValu
   }
 
   return map
+}
+
+/**
+ * Groups the posts that live only in Zernio by day, so the calendar can show
+ * them next to the Studio's own.
+ *
+ * @public
+ */
+export function remoteByDay(posts: RemotePost[]): Map<string, RemotePost[]> {
+  const map = new Map<string, RemotePost[]>()
+
+  for (const post of posts) {
+    const raw = (post.scheduledFor ?? '').trim()
+    if (!raw) continue
+    const date = new Date(raw)
+    if (Number.isNaN(date.getTime())) continue
+
+    const key = isoDay(date)
+    const list = map.get(key)
+    if (list) list.push(post)
+    else map.set(key, [post])
+  }
+
+  for (const list of map.values()) {
+    list.sort((a, b) => (a.scheduledFor ?? '').localeCompare(b.scheduledFor ?? ''))
+  }
+
+  return map
+}
+
+/**
+ * `HH:MM` of a post that lives in Zernio.
+ *
+ * @public
+ */
+export function remoteTimeLabel(post: RemotePost): string {
+  const raw = (post.scheduledFor ?? '').trim()
+  if (!raw) return ''
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 /**

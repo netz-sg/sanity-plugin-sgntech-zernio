@@ -23,6 +23,7 @@
 - **Previews in the real geometry** per post type — 4:5 for feed and carousel, 9:16 for story and reel — with the caption folded where the platform folds it, at 125 characters on Instagram and 480 on Facebook.
 - **Validation while writing**, per platform and post type: media count, file size, aspect ratio, caption length. What the API would reject is an error; what the platform would crop or hide is a warning.
 - **Media without uploads.** Images are handed over as Sanity CDN URLs, cropped by the image pipeline to what the post type expects. Nothing is copied, nothing is uploaded twice.
+- **Everything Zernio knows, not just your own work.** The calendar and the list also show posts written in Zernio's dashboard or by another tool, marked as external and read-only — otherwise a calendar looks complete while hiding half the schedule.
 - **Status write-back.** While the tool is open it asks Zernio about posts in flight and writes status, links to the published posts and errors back onto the document.
 - Instagram feed, carousel, story and reel · Facebook feed, story and reel.
 
@@ -101,11 +102,12 @@ zernio({
 
 ## How a post travels
 
-1. Write it: caption, media, post type, accounts, time.
-2. **Publish the document.** The plugin sends the published version, never the draft — what goes out has to be what was reviewed.
-3. Hit **Send to Zernio**, either from the document menu or from the list in the tool.
-4. Zernio schedules or publishes it; the document keeps the Zernio post id.
-5. While the tool is open, the status is refreshed every 30 seconds until it settles, and every published post gets a link.
+1. **New post** in the tool — or the small **+** on a day in the calendar, which creates it already scheduled for that day. Both open the document straight away.
+2. Write it: caption, media, post type, accounts, time.
+3. **Publish the document.** The plugin sends the published version, never the draft — what goes out has to be what was reviewed.
+4. Hit **Send to Zernio**, either from the document menu or from the list in the tool.
+5. Zernio schedules or publishes it; the document keeps the Zernio post id.
+6. While the tool is open, the status is refreshed every 30 seconds until it settles, and every published post gets a link.
 
 Nothing is polled while the tool is closed — the status then updates the next time somebody opens
 it. Webhooks would be the alternative, and they need a server; this plugin deliberately does not

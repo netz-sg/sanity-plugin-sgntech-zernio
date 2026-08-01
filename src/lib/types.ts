@@ -171,6 +171,20 @@ export interface ZernioSettings {
 }
 
 /**
+ * A post as Zernio knows it — including the ones written elsewhere, in Zernio's
+ * own dashboard or by another tool.
+ *
+ * @public
+ */
+export interface RemotePost {
+  id: string
+  content?: string
+  status?: string
+  scheduledFor?: string
+  platforms: {platform?: string; account?: string; status?: string; url?: string}[]
+}
+
+/**
  * A rule that failed on a post, with the field it belongs to.
  *
  * @public

@@ -1,5 +1,11 @@
 import {mediaItemsFor} from './media'
-import type {PublishResult, SocialPostValue, ZernioAccount, ZernioProfile} from './types'
+import type {
+  PublishResult,
+  RemotePost,
+  SocialPostValue,
+  ZernioAccount,
+  ZernioProfile,
+} from './types'
 
 /**
  * Base URL of the Zernio API.
@@ -196,6 +202,50 @@ export class ZernioClient {
     const response = await this.request('/posts', {method: 'POST', body})
     const post = asRecord(response)?.post
     return {id: readString(post, '_id'), status: readString(post, 'status')}
+  }
+
+  /**
+   * Everything Zernio has, not only what this Studio sent — the dashboard, a
+   * second tool or a colleague's phone all end up here too.
+   */
+  async listPosts(
+    options: {limit?: number; dateFrom?: string; dateTo?: string; profileId?: string} = {},
+  ): Promise<RemotePost[]> {
+    const body = await this.request('/posts', {
+      query: {
+        limit: String(options.limit ?? 200),
+        sortBy: 'scheduled-desc',
+        dateFrom: options.dateFrom,
+        dateTo: options.dateTo,
+        profileId: options.profileId,
+      },
+    })
+
+    return readArray(body, 'posts').flatMap((entry) => {
+      const id = readString(entry, '_id')
+      if (!id) return []
+
+      return [
+        {
+          id,
+          content: readString(entry, 'content') ?? readString(entry, 'title'),
+          status: readString(entry, 'status'),
+          scheduledFor: readString(entry, 'scheduledFor'),
+          platforms: readArray(entry, 'platforms').map((platform) => {
+            const account = asRecord(platform)?.accountId
+            return {
+              platform: readString(platform, 'platform'),
+              account:
+                readString(account, 'displayName') ??
+                readString(account, 'username') ??
+                readString(platform, 'accountId'),
+              status: readString(platform, 'status'),
+              url: readString(platform, 'platformPostUrl'),
+            }
+          }),
+        },
+      ]
+    })
   }
 
   async getPost(postId: string): Promise<{status?: string; results: PublishResult[]}> {

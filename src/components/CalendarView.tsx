@@ -2,8 +2,17 @@ import {Badge, Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
 import {useCallback, useMemo, useState} from 'react'
 import {useClient} from 'sanity'
 
-import {dayOf, monthGrid, moveToDay, postsByDay, timeLabel, weekGrid} from '../lib/calendar'
-import type {SocialPostValue} from '../lib/types'
+import {
+  dayOf,
+  monthGrid,
+  moveToDay,
+  postsByDay,
+  remoteByDay,
+  remoteTimeLabel,
+  timeLabel,
+  weekGrid,
+} from '../lib/calendar'
+import type {RemotePost, SocialPostValue} from '../lib/types'
 
 const API_VERSION = '2024-10-01'
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -30,10 +39,12 @@ function monthLabel(year: number, month: number): string {
  */
 export function CalendarView(props: {
   posts: SocialPostValue[]
+  remote?: RemotePost[]
   onOpen: (post: SocialPostValue) => void
   onChanged: () => void
+  onCreate?: (dayKey: string) => void
 }): React.JSX.Element {
-  const {posts, onOpen, onChanged} = props
+  const {posts, remote = [], onOpen, onChanged, onCreate} = props
   const client = useClient({apiVersion: API_VERSION})
 
   const today = useMemo(() => new Date(), [])
@@ -50,6 +61,7 @@ export function CalendarView(props: {
   )
 
   const byDay = useMemo(() => postsByDay(posts), [posts])
+  const remoteDays = useMemo(() => remoteByDay(remote), [remote])
   const undated = useMemo(() => posts.filter((post) => !dayOf(post)), [posts])
 
   const step = useCallback(
@@ -127,6 +139,7 @@ export function CalendarView(props: {
 
         {days.map((day) => {
           const entries = byDay.get(day.key) ?? []
+          const external = remoteDays.get(day.key) ?? []
 
           return (
             <Card
@@ -140,9 +153,22 @@ export function CalendarView(props: {
               onDrop={() => void drop(day.key)}
             >
               <Stack gap={2}>
-                <Text size={0} muted={!day.inMonth}>
-                  {day.date.getDate()}
-                </Text>
+                <Flex align="center" gap={1}>
+                  <Text size={0} muted={!day.inMonth}>
+                    {day.date.getDate()}
+                  </Text>
+                  <Box flex={1} />
+                  {onCreate && (
+                    <Button
+                      text="+"
+                      mode="bleed"
+                      padding={1}
+                      fontSize={0}
+                      aria-label={`New post on ${day.key}`}
+                      onClick={() => onCreate(day.key)}
+                    />
+                  )}
+                </Flex>
 
                 {entries.map((post) => (
                   <Card
@@ -162,6 +188,26 @@ export function CalendarView(props: {
                       </Text>
                       <Text size={0} muted textOverflow="ellipsis">
                         {post.kind} · {(post.targets ?? []).length} account(s)
+                      </Text>
+                    </Stack>
+                  </Card>
+                ))}
+
+                {external.map((post) => (
+                  <Card
+                    key={post.id}
+                    padding={2}
+                    radius={2}
+                    tone="transparent"
+                    border
+                    style={{borderStyle: 'dashed'}}
+                  >
+                    <Stack gap={1}>
+                      <Text size={0} muted textOverflow="ellipsis">
+                        {remoteTimeLabel(post)} {post.content ?? 'Zernio post'}
+                      </Text>
+                      <Text size={0} muted textOverflow="ellipsis">
+                        in Zernio · {post.platforms.map((entry) => entry.platform).join(', ')}
                       </Text>
                     </Stack>
                   </Card>
