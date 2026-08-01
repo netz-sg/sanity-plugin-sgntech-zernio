@@ -1,3 +1,4 @@
+import {effectiveAspect} from './crop'
 import type {PostKind, SocialMediaItem, SocialPostValue, ValidationIssue} from './types'
 
 /**
@@ -139,9 +140,15 @@ export function usableMedia(media: SocialMediaItem[] | undefined): SocialMediaIt
 
 function aspectOf(item: SocialMediaItem): number | undefined {
   const dimensions = item.asset?.metadata?.dimensions
-  if (dimensions?.aspectRatio) return dimensions.aspectRatio
-  if (dimensions?.width && dimensions?.height) return dimensions.width / dimensions.height
-  return undefined
+  // The crop is what goes out, so it is the crop that gets measured.
+  const cropped = effectiveAspect(
+    dimensions?.width && dimensions?.height
+      ? {width: dimensions.width, height: dimensions.height}
+      : undefined,
+    item.crop,
+  )
+  if (cropped) return cropped
+  return dimensions?.aspectRatio
 }
 
 function formatBytes(bytes: number): string {

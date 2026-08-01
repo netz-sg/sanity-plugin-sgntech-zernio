@@ -8,6 +8,7 @@ import {
   createSocialPostType,
   type SocialPostTypeOptions,
 } from './schema/socialPost'
+import {createTemplateType} from './schema/template'
 
 /**
  * Configuration for {@link zernio}.
@@ -17,6 +18,8 @@ import {
 export interface ZernioConfig extends SocialPostTypeOptions {
   /** Title of the tool in the Studio navigation. Defaults to `Zernio`. */
   toolTitle?: string
+  /** Label of the template document type. Defaults to `Post template`. */
+  templateTitle?: string
   /** Register the document action that sends a post. Defaults to `true`. */
   documentAction?: boolean
 }
@@ -47,12 +50,17 @@ export interface ZernioConfig extends SocialPostTypeOptions {
 export const zernio = definePlugin<ZernioConfig | void>((config) => {
   const options = config || {}
   const documentType = options.name ?? 'socialPost'
+  const templateType = options.templateType ?? 'zernioTemplate'
 
   return {
     name: 'sanity-plugin-sgntech-zernio',
 
     schema: {
-      types: [createSocialPostType(options), createSettingsType()],
+      types: [
+        createSocialPostType(options),
+        createTemplateType({name: templateType, title: options.templateTitle}),
+        createSettingsType(),
+      ],
     },
 
     tools: [
@@ -61,7 +69,7 @@ export const zernio = definePlugin<ZernioConfig | void>((config) => {
         title: options.toolTitle ?? 'Zernio',
         icon: ZernioIcon,
         component: ZernioTool,
-        options: {documentType},
+        options: {documentType, templateType},
       },
     ],
 
@@ -81,6 +89,19 @@ export {
   type SocialPostTypeOptions,
 } from './schema/socialPost'
 export {ZernioTool, type ZernioToolProps} from './components/ZernioTool'
+export {MediaEditor} from './components/MediaEditor'
+export {TemplateBar} from './components/TemplateBar'
+export {createTemplateInput, TemplateInput} from './components/TemplateInput'
+export {createTemplateType, type TemplateTypeOptions} from './schema/template'
+export {
+  applyTemplate,
+  fillPlaceholders,
+  hashtagLine,
+  templateContext,
+  type TemplateContext,
+  type TemplatePart,
+  type TemplateValue,
+} from './lib/templates'
 export {Composer} from './components/Composer'
 export {PostPreview} from './components/PostPreview'
 export {PostPreviewInput} from './components/PostPreviewInput'
@@ -97,6 +118,18 @@ export {
   validatePost,
   type KindRules,
 } from './lib/rules'
+export {
+  baseRect,
+  cropFromView,
+  effectiveAspect,
+  rectParam,
+  SAFE_ZONES,
+  viewFromCrop,
+  type CropView,
+  type Dimensions,
+  type ImageCrop,
+  type SafeZone,
+} from './lib/crop'
 export {
   assetUrlFromRef,
   deliveryUrl,

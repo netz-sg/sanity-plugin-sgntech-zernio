@@ -18,7 +18,9 @@
 
 ## What you get
 
-- **Write and publish inside the tool.** The **Compose** tab is a full post editor: caption, drag-in media, accounts, time, live preview, one button to publish or schedule. Nobody has to walk through the document form to get something out.
+- **Write and publish inside the tool.** The **Compose** tab is a full post editor: caption, first comment, media upload, accounts, time, live preview, one button to publish or schedule. Nobody has to walk through the document form to get something out.
+- **Templates** for caption, first comment and hashtags — one document, three parts, applied together or one at a time. `{{title}}`, `{{date}}`, `{{time}}`, `{{kind}}` and `{{accounts}}` are filled in; unknown placeholders stay visible so it is obvious what is still missing. Available in the composer and in the document form.
+- **Move and zoom the image** in the tool, in the frame the post type will show, and switch Instagram's **safe zones** on to see what the profile row, the reply bar or the reel buttons will cover. The crop is stored in Sanity's own `crop` shape, so the image field's crop tool and this one edit the same thing.
 - **Posts are documents.** Every post is still a `socialPost` in your dataset, so it gets version history, roles, review — and a reference to the article or release it belongs to. That is the reason to do this in Sanity rather than in a separate dashboard.
 - **A cockpit tool**: composer, month and week calendar with drag-and-drop rescheduling, a filtered post list, and a settings panel.
 - **Previews in the real geometry** per post type — 4:5 for feed and carousel, 9:16 for story and reel — with the caption folded where the platform folds it, at 125 characters on Instagram and 480 on Facebook. The same preview sits in the composer and in the document form, and both update while you type.
@@ -94,6 +96,8 @@ Posts can be written before any of this; they just cannot be sent.
 zernio({
   name: 'socialPost', // document type name
   title: 'Social post',
+  templateType: 'zernioTemplate', // template document type
+  templateTitle: 'Post template',
   relatedTypes: [], // document types a post may reference
   timezone: 'UTC', // default for new posts
   toolTitle: 'Zernio', // label in the Studio navigation
@@ -106,8 +110,9 @@ zernio({
 ### From the tool, in one go
 
 1. **Compose** in the Zernio tool — or the small **+** on a day in the calendar, which opens the composer on that day.
-2. Write it: caption, media, post type, accounts, time. The preview next to it shows the crop and the fold while you type.
-3. **Publish now** or **Schedule**. The document is written and handed to Zernio in the same step; the composer stays open for the next post.
+2. Write it: caption, first comment, media, post type, accounts, time. Pick a template if there is one. The preview next to it shows the crop and the fold while you type.
+3. **Adjust** a picture to move and zoom it inside the frame; for stories and reels the safe zones show what Instagram covers up.
+4. **Publish now** or **Schedule**. The document is written and handed to Zernio in the same step; the composer stays open for the next post.
 
 Media added here is uploaded to Sanity's asset store first, so it ends up in your media library like
 any other image — the tool never sends a file to Zernio, only a URL.
@@ -125,6 +130,26 @@ link.
 Nothing is polled while the tool is closed — the status then updates the next time somebody opens
 it. Webhooks would be the alternative, and they need a server; this plugin deliberately does not
 require one.
+
+## Templates
+
+A template is a document of its own:
+
+```json
+{
+  "_type": "zernioTemplate",
+  "title": "Album release",
+  "caption": "Out now: {{title}} — everywhere from {{date}}.",
+  "firstComment": "All links in the bio",
+  "hashtags": ["metal", "newrelease"],
+  "hashtagPlacement": "caption"
+}
+```
+
+Caption and first comment are replaced when applied, hashtags are appended — to the caption or to
+the first comment, whichever the template says. Tags are cleaned up on the way in: a leading `#` is
+optional, spaces are removed and duplicates are dropped, because a repeated tag is a shadowban risk
+on Instagram.
 
 ## What is stored
 

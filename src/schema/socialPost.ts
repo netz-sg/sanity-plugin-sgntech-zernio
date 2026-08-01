@@ -1,6 +1,7 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 
 import {PostPreviewInput} from '../components/PostPreviewInput'
+import {createTemplateInput} from '../components/TemplateInput'
 import {TargetsInput} from '../components/TargetsInput'
 import {ZernioIcon} from '../components/ZernioIcon'
 import {SETTINGS_TYPE} from '../lib/settings'
@@ -15,6 +16,8 @@ export interface SocialPostTypeOptions {
   name?: string
   /** Label in the Studio. Defaults to `Social post`. */
   title?: string
+  /** Template document type offered in the form. Defaults to `zernioTemplate`. */
+  templateType?: string
   /** Document types a post may point at, e.g. `['post', 'release']`. */
   relatedTypes?: string[]
   /** Default timezone offered in new posts. */
@@ -44,7 +47,13 @@ const STATUSES = [
  * @public
  */
 export function createSocialPostType(options: SocialPostTypeOptions = {}) {
-  const {name = 'socialPost', title = 'Social post', relatedTypes = [], timezone = 'UTC'} = options
+  const {
+    name = 'socialPost',
+    title = 'Social post',
+    relatedTypes = [],
+    timezone = 'UTC',
+    templateType = 'zernioTemplate',
+  } = options
 
   return defineType({
     name,
@@ -75,6 +84,15 @@ export function createSocialPostType(options: SocialPostTypeOptions = {}) {
         initialValue: 'feed',
         options: {list: KINDS, layout: 'radio', direction: 'horizontal'},
         validation: (rule) => rule.required(),
+      }),
+
+      defineField({
+        // Applies a template to the fields below; stores nothing itself.
+        name: 'template',
+        title: 'Template',
+        type: 'string',
+        group: 'content',
+        components: {input: createTemplateInput(templateType)},
       }),
 
       defineField({
@@ -129,7 +147,6 @@ export function createSocialPostType(options: SocialPostTypeOptions = {}) {
         title: 'Preview',
         type: 'string',
         group: 'content',
-        readOnly: true,
         components: {input: PostPreviewInput},
       }),
 

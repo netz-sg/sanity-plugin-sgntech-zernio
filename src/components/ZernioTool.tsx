@@ -31,6 +31,7 @@ import {SettingsPanel} from './SettingsPanel'
  */
 export interface ZernioToolProps {
   documentType: string
+  templateType: string
 }
 
 /**
@@ -40,6 +41,7 @@ export interface ZernioToolProps {
  */
 export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Element {
   const documentType = props.options?.documentType ?? 'socialPost'
+  const templateType = props.options?.templateType ?? 'zernioTemplate'
   const router = useRouter()
 
   const [tab, setTab] = useState<'compose' | 'calendar' | 'posts' | 'settings'>('compose')
@@ -144,6 +146,7 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
           <Composer
             key={composeKey}
             documentType={documentType}
+            templateType={templateType}
             initialDay={composeDay}
             onSent={refresh}
             onOpenDocument={openDocument}

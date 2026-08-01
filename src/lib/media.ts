@@ -1,3 +1,4 @@
+import {effectiveAspect, rectParam} from './crop'
 import {rulesFor} from './rules'
 import type {PostKind, SocialMediaItem} from './types'
 
@@ -51,10 +52,26 @@ export function deliveryUrl(
     w: String(geometry.width),
     h: String(geometry.height),
     fit: 'crop',
-    crop: 'entropy',
     auto: 'format',
     q: String(quality),
   })
+
+  const source = item?.asset?.metadata?.dimensions
+  const rect =
+    source?.width && source?.height
+      ? rectParam({width: source.width, height: source.height}, item?.crop)
+      : undefined
+
+  if (rect) {
+    // A crop chosen by hand wins over anything the pipeline would guess.
+    parameters.set('rect', rect)
+  } else if (item?.hotspot) {
+    parameters.set('crop', 'focalpoint')
+    parameters.set('fp-x', String(item.hotspot.x))
+    parameters.set('fp-y', String(item.hotspot.y))
+  } else {
+    parameters.set('crop', 'entropy')
+  }
 
   return `${url}?${parameters.toString()}`
 }
@@ -186,8 +203,12 @@ export function willBeCropped(
 ): boolean {
   const dimensions = item?.asset?.metadata?.dimensions
   const aspect =
-    dimensions?.aspectRatio ??
-    (dimensions?.width && dimensions?.height ? dimensions.width / dimensions.height : undefined)
+    effectiveAspect(
+      dimensions?.width && dimensions?.height
+        ? {width: dimensions.width, height: dimensions.height}
+        : undefined,
+      item?.crop,
+    ) ?? dimensions?.aspectRatio
   if (!aspect) return false
 
   const rules = rulesFor(platform, kind)

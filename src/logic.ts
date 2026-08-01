@@ -24,6 +24,18 @@ export {
   type KindRules,
 } from './lib/rules'
 export {
+  baseRect,
+  cropFromView,
+  effectiveAspect,
+  rectParam,
+  SAFE_ZONES,
+  viewFromCrop,
+  type CropView,
+  type Dimensions,
+  type ImageCrop,
+  type SafeZone,
+} from './lib/crop'
+export {
   assetUrlFromRef,
   deliveryUrl,
   isVideo,
@@ -46,6 +58,15 @@ export {
   type CalendarDay,
 } from './lib/calendar'
 export {keyWarning, SETTINGS_ID, SETTINGS_TYPE} from './lib/settings'
+export {
+  applyTemplate,
+  fillPlaceholders,
+  hashtagLine,
+  templateContext,
+  type TemplateContext,
+  type TemplatePart,
+  type TemplateValue,
+} from './lib/templates'
 export type {
   CachedAccount,
   PostKind,

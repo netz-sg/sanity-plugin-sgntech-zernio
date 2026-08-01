@@ -5,7 +5,6 @@ import {
   Card,
   Checkbox,
   Flex,
-  Select,
   Stack,
   Switch,
   Text,
@@ -16,11 +15,14 @@ import {useCallback, useMemo, useRef, useState} from 'react'
 import {useClient} from 'sanity'
 
 import {useZernioClient, useZernioSettings} from '../hooks/useZernio'
+import {deliveryUrl, isVideo} from '../lib/media'
 import {canSend} from '../lib/rules'
 import {sendPost} from '../lib/send'
 import type {PostKind, SocialMediaItem, SocialPostValue} from '../lib/types'
+import {MediaEditor} from './MediaEditor'
 import {PlatformIcon} from './PlatformIcon'
 import {PostPreview} from './PostPreview'
+import {TemplateBar} from './TemplateBar'
 
 const API_VERSION = '2024-10-01'
 const KINDS: PostKind[] = ['feed', 'carousel', 'story', 'reel']
@@ -42,11 +44,12 @@ function toLocalInput(date: Date): string {
  */
 export function Composer(props: {
   documentType: string
+  templateType: string
   initialDay?: string
   onSent: () => void
   onOpenDocument: (id: string) => void
 }): React.JSX.Element {
-  const {documentType, initialDay, onSent, onOpenDocument} = props
+  const {documentType, templateType, initialDay, onSent, onOpenDocument} = props
   const client = useClient({apiVersion: API_VERSION})
   const {settings} = useZernioSettings()
   const zernio = useZernioClient(settings.apiKey)
@@ -55,6 +58,7 @@ export function Composer(props: {
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<PostKind>('feed')
   const [content, setContent] = useState('')
+  const [firstComment, setFirstComment] = useState('')
   const [media, setMedia] = useState<SocialMediaItem[]>([])
   const [accountIds, setAccountIds] = useState<string[]>([])
   const [publishNow, setPublishNow] = useState(false)
@@ -62,8 +66,11 @@ export function Composer(props: {
     const base = initialDay ? new Date(`${initialDay}T12:00:00`) : new Date(Date.now() + 3600_000)
     return toLocalInput(base)
   })
+  const [editing, setEditing] = useState<string | undefined>()
   const [busy, setBusy] = useState<string | undefined>()
   const [note, setNote] = useState<{tone: 'positive' | 'critical'; text: string} | undefined>()
+
+  const editingItem = media.find((item) => (item._key ?? '') === editing)
 
   const accounts = useMemo(
     () =>
@@ -78,6 +85,9 @@ export function Composer(props: {
       title: title.trim() || 'Untitled',
       kind,
       content,
+      // Only Instagram feed and carousel have one; sending it elsewhere is noise.
+      firstComment:
+        (kind === 'feed' || kind === 'carousel') && firstComment.trim() ? firstComment : undefined,
       media,
       publishNow,
       scheduledFor: publishNow ? undefined : new Date(when).toISOString(),
@@ -92,7 +102,18 @@ export function Composer(props: {
         }
       }),
     }),
-    [accountIds, accounts, content, kind, media, publishNow, settings.timezone, title, when],
+    [
+      accountIds,
+      accounts,
+      content,
+      firstComment,
+      kind,
+      media,
+      publishNow,
+      settings.timezone,
+      title,
+      when,
+    ],
   )
 
   const upload = useCallback(
@@ -158,6 +179,7 @@ export function Composer(props: {
         // the parts nobody wants to delete by hand.
         setTitle('')
         setContent('')
+        setFirstComment('')
         setMedia([])
         onSent()
       }
@@ -209,6 +231,15 @@ export function Composer(props: {
           </Flex>
         </Stack>
 
+        <TemplateBar
+          templateType={templateType}
+          post={value}
+          onApply={(patch) => {
+            if (patch.content !== undefined) setContent(patch.content)
+            if (patch.firstComment !== undefined) setFirstComment(patch.firstComment)
+          }}
+        />
+
         <Stack gap={2}>
           <Text size={1} weight="medium">
             Caption
@@ -220,6 +251,20 @@ export function Composer(props: {
             placeholder="What goes out…"
           />
         </Stack>
+
+        {(kind === 'feed' || kind === 'carousel') && (
+          <Stack gap={2}>
+            <Text size={1} weight="medium">
+              First comment
+            </Text>
+            <TextArea
+              rows={2}
+              value={firstComment}
+              onChange={(event) => setFirstComment(event.currentTarget.value)}
+              placeholder="Posted right after publishing — Instagram feed and carousel only"
+            />
+          </Stack>
+        )}
 
         <Stack gap={2}>
           <Flex align="center" gap={2}>
@@ -246,31 +291,66 @@ export function Composer(props: {
 
           {media.length > 0 && (
             <Flex gap={2} wrap="wrap">
-              {media.map((item, index) => (
-                <Card key={item._key ?? index} radius={2} border overflow="hidden">
-                  <Box style={{width: 72, height: 72, position: 'relative'}}>
-                    {item.asset?.url && !item._type?.includes('video') ? (
-                      <img
-                        src={item.asset.url}
-                        alt=""
-                        style={{width: '100%', height: '100%', objectFit: 'cover'}}
+              {media.map((item, index) => {
+                const key = item._key ?? String(index)
+                const video = isVideo(item)
+
+                return (
+                  <Card key={key} radius={2} border overflow="hidden">
+                    <Box style={{width: 84, height: 84, position: 'relative'}}>
+                      {!video && deliveryUrl(item, kind) ? (
+                        <img
+                          src={deliveryUrl(item, kind)}
+                          alt=""
+                          style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                        />
+                      ) : (
+                        <Flex align="center" justify="center" style={{height: '100%'}}>
+                          <Text size={0}>video</Text>
+                        </Flex>
+                      )}
+                    </Box>
+                    <Flex>
+                      <Button
+                        text={editing === key ? 'Close' : 'Adjust'}
+                        mode="bleed"
+                        fontSize={0}
+                        padding={2}
+                        disabled={video}
+                        onClick={() => setEditing(editing === key ? undefined : key)}
                       />
-                    ) : (
-                      <Flex align="center" justify="center" style={{height: '100%'}}>
-                        <Text size={0}>video</Text>
-                      </Flex>
-                    )}
-                  </Box>
-                  <Button
-                    text="Remove"
-                    mode="bleed"
-                    fontSize={0}
-                    padding={1}
-                    onClick={() => setMedia((current) => current.filter((_, i) => i !== index))}
-                  />
-                </Card>
-              ))}
+                      <Button
+                        text="Remove"
+                        mode="bleed"
+                        tone="critical"
+                        fontSize={0}
+                        padding={2}
+                        onClick={() => {
+                          setEditing(undefined)
+                          setMedia((current) => current.filter((_, i) => i !== index))
+                        }}
+                      />
+                    </Flex>
+                  </Card>
+                )
+              })}
             </Flex>
+          )}
+
+          {editingItem && (
+            <MediaEditor
+              key={editing}
+              item={editingItem}
+              kind={kind}
+              onChange={(crop) =>
+                setMedia((current) =>
+                  current.map((entry) =>
+                    (entry._key ?? '') === editing ? {...entry, crop} : entry,
+                  ),
+                )
+              }
+              onClose={() => setEditing(undefined)}
+            />
           )}
         </Stack>
 
@@ -329,23 +409,16 @@ export function Composer(props: {
           </Flex>
 
           {!publishNow && (
-            <Flex gap={2} align="center">
-              <Box flex={1}>
-                <TextInput
-                  type="datetime-local"
-                  value={when}
-                  onChange={(event) => setWhen(event.currentTarget.value)}
-                />
-              </Box>
-              <Select
-                value={settings.timezone ?? 'UTC'}
-                onChange={() => undefined}
-                disabled
-                style={{maxWidth: 200}}
-              >
-                <option>{settings.timezone ?? 'UTC'}</option>
-              </Select>
-            </Flex>
+            <Stack gap={2}>
+              <TextInput
+                type="datetime-local"
+                value={when}
+                onChange={(event) => setWhen(event.currentTarget.value)}
+              />
+              <Text size={0} muted>
+                Read in {settings.timezone || 'UTC'} — change it under Settings.
+              </Text>
+            </Stack>
           )}
         </Stack>
 

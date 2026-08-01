@@ -1,3 +1,5 @@
+import type {ImageCrop} from './crop'
+
 /**
  * Platforms this plugin covers. Zernio itself speaks to more, but the editor
  * side — validation, preview, per-type options — is written for these two.
@@ -63,6 +65,10 @@ export interface ZernioProfile {
 export interface SocialMediaItem {
   _key?: string
   _type?: string
+  /** Which part of the image is used — Sanity's own crop shape. */
+  crop?: ImageCrop
+  /** What has to stay in frame when the image is cropped by the pipeline. */
+  hotspot?: {x: number; y: number; width?: number; height?: number}
   asset?: {
     _id?: string
     _ref?: string
