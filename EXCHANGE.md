@@ -62,7 +62,7 @@ architecture — v3 is the correct choice among the options given.
 ## Package URL
 
 ```
-— not published yet —
+https://www.npmjs.com/package/sanity-plugin-sgntech-zernio
 ```
 
 ## Installation command
