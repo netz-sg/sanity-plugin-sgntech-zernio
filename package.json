@@ -1,0 +1,75 @@
+{
+  "name": "sanity-plugin-sgntech-zernio",
+  "version": "1.0.0",
+  "description": "Plan, preview and publish Instagram and Facebook posts from inside Sanity Studio, through the Zernio API — calendar, previews and per-type validation included.",
+  "keywords": [
+    "facebook",
+    "instagram",
+    "sanity",
+    "sanity-plugin",
+    "scheduling",
+    "social-media",
+    "studio-tool",
+    "zernio"
+  ],
+  "homepage": "https://github.com/netz-sg/sanity-plugin-sgntech-zernio#readme",
+  "bugs": {
+    "url": "https://github.com/netz-sg/sanity-plugin-sgntech-zernio/issues"
+  },
+  "license": "MIT",
+  "author": "SGNTech <admin@sg-netz.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netz-sg/sanity-plugin-sgntech-zernio.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
+    "format": "oxfmt",
+    "link-watch": "plugin-kit link-watch",
+    "lint": "oxlint",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "watch": "pkg-utils watch --strict"
+  },
+  "dependencies": {
+    "@sanity/icons": "^5.2.1",
+    "@sanity/ui": "^3.5.1"
+  },
+  "devDependencies": {
+    "@sanity/browserslist-config": "^1.0.5",
+    "@sanity/pkg-utils": "^11.0.17",
+    "@sanity/plugin-kit": "^10.0.2",
+    "@types/react": "^19.2.18",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.76.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sanity": "^6.8.0",
+    "styled-components": "^6.4.4",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "sanity": "^5 || ^6.0.0-0"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}
