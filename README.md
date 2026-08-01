@@ -1,6 +1,6 @@
 <!-- Social preview / OpenGraph image -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/netz-sg/sanity-plugin-sgntech-zernio/main/assets/icon.png" alt="sanity-plugin-sgntech-zernio" width="150" />
+  <img src="https://raw.githubusercontent.com/netz-sg/sanity-plugin-sgntech-zernio/main/assets/og-image.png" alt="sanity-plugin-sgntech-zernio — plan Instagram and Facebook posts inside Sanity Studio" width="640" />
 </p>
 
 <h1 align="center">sanity-plugin-sgntech-zernio</h1>
@@ -179,7 +179,9 @@ npm run link-watch
 ```
 
 Built with [@sanity/plugin-kit](https://github.com/sanity-io/plugins/tree/main/packages/@sanity/plugin-kit).
-Not affiliated with Zernio, Instagram or Meta.
+
+Not affiliated with Zernio, Instagram or Meta. The Zernio mark in the plugin icon identifies the
+service this plugin talks to; all rights to it remain with Zernio.
 
 ## License
 
