@@ -138,19 +138,28 @@ the image pipeline cannot transcode them, so they have to arrive in the right fo
 The preview says when an image will be cropped, and the validation blocks files above the
 platform's limit (8 MB on Instagram, 4 MB on Facebook).
 
-## Exports
+## Two entry points
 
-The building blocks are exported, so a Studio can use them elsewhere:
+The Studio side is the default entry. Everything that has nothing to do with the Studio — the
+rules, the payload builder, the API client, the calendar maths — also lives under `/logic`, which
+imports neither `sanity` nor `@sanity/ui` and therefore runs in a plain Node process or a
+serverless function:
 
 ```ts
+// in the Studio
+import {zernio, PostPreview} from 'sanity-plugin-sgntech-zernio'
+
+// anywhere else — no Studio, no CSS, no React
 import {
-  PostPreview, // the preview component
-  validatePost, // the rules, without any UI
-  postPayload, // document → Zernio request body
-  ZernioClient, // the API client, with a swappable baseUrl
-  monthGrid, // calendar helpers
-} from 'sanity-plugin-sgntech-zernio'
+  validatePost,
+  postPayload,
+  ZernioClient,
+  monthGrid,
+} from 'sanity-plugin-sgntech-zernio/logic'
 ```
+
+That is also the seam for moving the key off the browser: `new ZernioClient({apiKey, baseUrl})`
+points at your own proxy just as happily as at Zernio.
 
 ## Known limits
 

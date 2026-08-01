@@ -33,7 +33,22 @@
       "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./logic": {
+      "source": "./src/logic.ts",
+      "default": "./dist/logic.js"
+    },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "default": "./dist/index.js"
+      },
+      "./logic": {
+        "default": "./dist/logic.js"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "scripts": {
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
