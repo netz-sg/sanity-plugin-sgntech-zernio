@@ -24,12 +24,15 @@ export {
   type KindRules,
 } from './lib/rules'
 export {
+  assetUrlFromRef,
   deliveryUrl,
   isVideo,
   KIND_GEOMETRY,
   mediaItemsFor,
   mediaType,
+  resolveMedia,
   willBeCropped,
+  type AssetSource,
 } from './lib/media'
 export {
   dayOf,

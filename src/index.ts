@@ -81,7 +81,11 @@ export {
   type SocialPostTypeOptions,
 } from './schema/socialPost'
 export {ZernioTool, type ZernioToolProps} from './components/ZernioTool'
+export {Composer} from './components/Composer'
 export {PostPreview} from './components/PostPreview'
+export {PostPreviewInput} from './components/PostPreviewInput'
+export {PlatformIcon} from './components/PlatformIcon'
+export {RemotePostGrid} from './components/RemotePostGrid'
 export {ZernioClient, ZernioError, postPayload, ZERNIO_BASE_URL} from './lib/client'
 export type {ZernioClientOptions} from './lib/client'
 export {isPending, refreshStatus, sendPost, type SendOutcome} from './lib/send'
@@ -94,12 +98,15 @@ export {
   type KindRules,
 } from './lib/rules'
 export {
+  assetUrlFromRef,
   deliveryUrl,
   isVideo,
   KIND_GEOMETRY,
   mediaItemsFor,
   mediaType,
+  resolveMedia,
   willBeCropped,
+  type AssetSource,
 } from './lib/media'
 export {
   dayOf,

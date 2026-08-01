@@ -60,6 +60,92 @@ export function deliveryUrl(
 }
 
 /**
+ * Where a dataset lives, so an asset reference can be turned into a URL.
+ *
+ * @public
+ */
+export interface AssetSource {
+  projectId: string
+  dataset: string
+}
+
+/**
+ * Builds the CDN URL of an asset from its reference.
+ *
+ * The document form only ever has `asset._ref` — the dereferenced asset with its
+ * `url` is a query-time thing. The reference carries everything the URL needs,
+ * so the preview does not have to wait for a round trip.
+ *
+ * @public
+ */
+export function assetUrlFromRef(
+  reference: string | undefined,
+  source: AssetSource,
+): string | undefined {
+  if (!reference || !source.projectId || !source.dataset) return undefined
+  const parts = reference.split('-')
+  const kind = parts.shift()
+
+  if (kind === 'image') {
+    const format = parts.pop()
+    const dimensions = parts.pop()
+    const id = parts.join('-')
+    if (!format || !dimensions || !id) return undefined
+    return `https://cdn.sanity.io/images/${source.projectId}/${source.dataset}/${id}-${dimensions}.${format}`
+  }
+
+  if (kind === 'file') {
+    const extension = parts.pop()
+    const id = parts.join('-')
+    if (!extension || !id) return undefined
+    return `https://cdn.sanity.io/files/${source.projectId}/${source.dataset}/${id}.${extension}`
+  }
+
+  return undefined
+}
+
+/** `1080x1350` out of an image reference. */
+function dimensionsFromRef(
+  reference: string | undefined,
+): {width: number; height: number; aspectRatio: number} | undefined {
+  if (!reference?.startsWith('image-')) return undefined
+  const dimensions = reference.split('-').at(-2) ?? ''
+  const [width, height] = dimensions.split('x').map(Number)
+  if (!width || !height) return undefined
+  return {width, height, aspectRatio: width / height}
+}
+
+/**
+ * Fills in `asset.url` and the dimensions for media that only carries a
+ * reference, so the same preview works in the form and in the tool.
+ *
+ * @public
+ */
+export function resolveMedia(
+  media: SocialMediaItem[] | undefined,
+  source: AssetSource,
+): SocialMediaItem[] {
+  if (!Array.isArray(media)) return []
+
+  return media.map((item) => {
+    const reference = item?.asset?._ref
+    if (!item?.asset || item.asset.url || !reference) return item
+
+    const url = assetUrlFromRef(reference, source)
+    if (!url) return item
+
+    return {
+      ...item,
+      asset: {
+        ...item.asset,
+        url,
+        metadata: item.asset.metadata ?? {dimensions: dimensionsFromRef(reference)},
+      },
+    }
+  })
+}
+
+/**
  * The media type Zernio expects alongside the URL.
  *
  * @public

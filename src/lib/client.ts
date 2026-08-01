@@ -225,6 +225,24 @@ export class ZernioClient {
       const id = readString(entry, '_id')
       if (!id) return []
 
+      // The list response is not documented down to the media field, and it has
+      // carried different names. Read every plausible one instead of guessing.
+      const rawMedia = [
+        ...readArray(entry, 'mediaItems'),
+        ...readArray(entry, 'media'),
+        ...readArray(entry, 'attachments'),
+      ]
+      const media = rawMedia.flatMap((item) => {
+        const url =
+          readString(item, 'thumbnailUrl') ??
+          readString(item, 'thumbnail') ??
+          readString(item, 'url') ??
+          (typeof item === 'string' ? item : undefined)
+        if (!url) return []
+        const kind = readString(item, 'type') ?? ''
+        return [{url, type: kind.startsWith('video') ? ('video' as const) : ('image' as const)}]
+      })
+
       return [
         {
           id,
@@ -243,6 +261,7 @@ export class ZernioClient {
               url: readString(platform, 'platformPostUrl'),
             }
           }),
+          media,
         },
       ]
     })

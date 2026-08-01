@@ -1,5 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 
+import {PostPreviewInput} from '../components/PostPreviewInput'
 import {TargetsInput} from '../components/TargetsInput'
 import {ZernioIcon} from '../components/ZernioIcon'
 import {SETTINGS_TYPE} from '../lib/settings'
@@ -120,6 +121,16 @@ export function createSocialPostType(options: SocialPostTypeOptions = {}) {
             ],
           }),
         ],
+      }),
+
+      defineField({
+        // Renders the preview; nothing is ever stored in it.
+        name: 'preview',
+        title: 'Preview',
+        type: 'string',
+        group: 'content',
+        readOnly: true,
+        components: {input: PostPreviewInput},
       }),
 
       defineField({

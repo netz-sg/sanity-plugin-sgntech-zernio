@@ -13,7 +13,6 @@ import {
   Text,
 } from '@sanity/ui'
 import {useCallback, useState} from 'react'
-import {useClient} from 'sanity'
 import {useRouter} from 'sanity/router'
 
 import {usePosts} from '../hooks/usePosts'
@@ -21,6 +20,7 @@ import {useRemotePosts} from '../hooks/useRemotePosts'
 import {useZernioSettings} from '../hooks/useZernio'
 import type {SocialPostValue} from '../lib/types'
 import {CalendarView} from './CalendarView'
+import {Composer} from './Composer'
 import {PostList} from './PostList'
 import {SettingsPanel} from './SettingsPanel'
 
@@ -41,9 +41,11 @@ export interface ZernioToolProps {
 export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Element {
   const documentType = props.options?.documentType ?? 'socialPost'
   const router = useRouter()
-  const client = useClient({apiVersion: '2024-10-01'})
 
-  const [tab, setTab] = useState<'calendar' | 'posts' | 'settings'>('calendar')
+  const [tab, setTab] = useState<'compose' | 'calendar' | 'posts' | 'settings'>('compose')
+  const [composeDay, setComposeDay] = useState<string | undefined>()
+  // Bumped to start the composer over — its fields are local state.
+  const [composeKey, setComposeKey] = useState(0)
   const [generation, setGeneration] = useState(0)
   const {settings, loading: settingsLoading} = useZernioSettings()
   const {posts, loading, reload} = usePosts(documentType)
@@ -54,34 +56,26 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
     setGeneration((current) => current + 1)
   }, [reload])
 
-  const create = useCallback(
-    (dayKey?: string) => {
-      const scheduledFor = dayKey ? new Date(`${dayKey}T12:00:00`).toISOString() : undefined
-      void client
-        .create({
-          _type: documentType,
-          title: 'New post',
-          kind: 'feed',
-          status: 'draft',
-          timezone: settings.timezone,
-          ...(scheduledFor ? {scheduledFor} : {}),
-        })
-        .then((created) => {
-          router.navigateIntent('edit', {id: created._id, type: documentType})
-          return undefined
-        })
-        .catch(() => undefined)
+  /** Opens the composer, on a day when the calendar asked for one. */
+  const create = useCallback((dayKey?: string) => {
+    setComposeDay(dayKey)
+    setComposeKey((current) => current + 1)
+    setTab('compose')
+  }, [])
+
+  const openDocument = useCallback(
+    (id: string) => {
+      // Same route the desk uses, so the post opens in the normal editor.
+      router.navigateIntent('edit', {id, type: documentType})
     },
-    [client, documentType, router, settings.timezone],
+    [documentType, router],
   )
 
   const open = useCallback(
     (post: SocialPostValue) => {
-      if (!post._id) return
-      // Same route the desk uses, so the post opens in the normal editor.
-      router.navigateIntent('edit', {id: post._id, type: documentType})
+      if (post._id) openDocument(post._id)
     },
-    [documentType, router],
+    [openDocument],
   )
 
   const configured = Boolean(settings.apiKey)
@@ -117,6 +111,13 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
 
         <TabList gap={2}>
           <Tab
+            id="compose-tab"
+            aria-controls="compose-panel"
+            label="Compose"
+            selected={tab === 'compose'}
+            onClick={() => setTab('compose')}
+          />
+          <Tab
             id="calendar-tab"
             aria-controls="calendar-panel"
             label="Calendar"
@@ -138,6 +139,16 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
             onClick={() => setTab('settings')}
           />
         </TabList>
+
+        <TabPanel id="compose-panel" aria-labelledby="compose-tab" hidden={tab !== 'compose'}>
+          <Composer
+            key={composeKey}
+            documentType={documentType}
+            initialDay={composeDay}
+            onSent={refresh}
+            onOpenDocument={openDocument}
+          />
+        </TabPanel>
 
         <TabPanel id="calendar-panel" aria-labelledby="calendar-tab" hidden={tab !== 'calendar'}>
           <CalendarView

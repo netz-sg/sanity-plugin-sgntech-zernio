@@ -182,6 +182,8 @@ export interface RemotePost {
   status?: string
   scheduledFor?: string
   platforms: {platform?: string; account?: string; status?: string; url?: string}[]
+  /** Preview images, when Zernio returns any with the list. */
+  media: {url: string; type: 'image' | 'video'}[]
 }
 
 /**
