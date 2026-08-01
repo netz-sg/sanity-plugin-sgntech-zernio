@@ -75,11 +75,16 @@ export default defineConfig({
 Then open the **Zernio** tool, go to **Settings** and:
 
 1. paste the API key — it is checked immediately,
-2. load or create a profile,
-3. connect an Instagram or Facebook account (opens Zernio's OAuth flow in a new tab),
-4. reload the accounts.
+2. press **Reload accounts**.
 
-Posts can be written before any of that; they just cannot be sent.
+That is all, provided the accounts are already connected in Zernio. Connecting is only for adding a
+new account, and it opens Zernio's own OAuth flow in a new tab.
+
+A profile narrows which accounts are loaded. Leave it unset and every account of the workspace is
+offered; set one and only its accounts appear — if the list stays empty although Zernio has
+accounts, that filter is usually the reason. **Show all accounts** removes it again.
+
+Posts can be written before any of this; they just cannot be sent.
 
 ### Options
 

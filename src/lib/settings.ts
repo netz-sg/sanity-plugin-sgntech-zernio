@@ -47,6 +47,24 @@ export async function writeSettings(
 }
 
 /**
+ * Removes a single setting again — used to drop the profile filter, which is
+ * not the same as setting it to an empty string: Zernio returns every account
+ * only when no profile is sent at all.
+ *
+ * @public
+ */
+export async function clearSetting(
+  client: SanityClient,
+  field: keyof ZernioSettings,
+): Promise<void> {
+  await client
+    .patch(SETTINGS_ID)
+    .unset([field])
+    .commit({visibility: 'async'})
+    .catch(() => undefined)
+}
+
+/**
  * Stores the account list so the document form can offer accounts without
  * calling Zernio on every keystroke.
  *

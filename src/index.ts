@@ -112,6 +112,7 @@ export {
 } from './lib/calendar'
 export {
   cacheAccounts,
+  clearSetting,
   keyWarning,
   readSettings,
   SETTINGS_ID,

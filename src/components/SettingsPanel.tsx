@@ -4,7 +4,7 @@ import {useClient} from 'sanity'
 
 import {useZernioSettings} from '../hooks/useZernio'
 import {ZernioClient} from '../lib/client'
-import {cacheAccounts, keyWarning} from '../lib/settings'
+import {cacheAccounts, clearSetting, keyWarning} from '../lib/settings'
 import type {ZernioProfile} from '../lib/types'
 
 const API_VERSION = '2024-10-01'
@@ -88,6 +88,17 @@ export function SettingsPanel(): React.JSX.Element {
     })
   }, [newProfile, run, save, settings.apiKey])
 
+  const clearProfile = useCallback(() => {
+    void run('clear-profile', async () => {
+      await clearSetting(sanity, 'profileId')
+      reload()
+      setNote({
+        tone: 'positive',
+        text: 'Profile filter removed — reload the accounts to see all of them.',
+      })
+    })
+  }, [reload, run, sanity])
+
   const refreshAccounts = useCallback(() => {
     const apiKey = settings.apiKey
     if (!apiKey) return
@@ -162,6 +173,11 @@ export function SettingsPanel(): React.JSX.Element {
 
       <Stack gap={3}>
         <Heading size={1}>Profile</Heading>
+        <Text size={1} muted>
+          A profile narrows which accounts are loaded. Leave it unset to see every account of the
+          Zernio workspace — that is the right choice for most Studios.
+        </Text>
+
         <Flex gap={2} align="center" wrap="wrap">
           <Button
             text="Load profiles"
@@ -169,7 +185,19 @@ export function SettingsPanel(): React.JSX.Element {
             disabled={!settings.apiKey || busy === 'profiles'}
             onClick={loadProfiles}
           />
-          {settings.profileId && <Badge tone="primary">current: {settings.profileId}</Badge>}
+          {settings.profileId ? (
+            <>
+              <Badge tone="primary">filtered: {settings.profileId}</Badge>
+              <Button
+                text="Show all accounts"
+                mode="ghost"
+                disabled={busy === 'clear-profile'}
+                onClick={clearProfile}
+              />
+            </>
+          ) : (
+            <Badge>no filter — all accounts</Badge>
+          )}
         </Flex>
 
         {profiles.length > 0 && (
@@ -216,11 +244,15 @@ export function SettingsPanel(): React.JSX.Element {
 
       <Stack gap={3}>
         <Heading size={1}>Accounts</Heading>
+        <Text size={1} muted>
+          Accounts that are already connected in Zernio only need a reload — connecting is for
+          adding a new one.
+        </Text>
         <Flex gap={2} wrap="wrap">
           {PLATFORMS.map((platform) => (
             <Button
               key={platform}
-              text={`Connect ${platform}`}
+              text={`Connect a new ${platform} account`}
               mode="ghost"
               disabled={!settings.apiKey || !settings.profileId || busy === `connect-${platform}`}
               onClick={() => connect(platform)}
@@ -228,7 +260,7 @@ export function SettingsPanel(): React.JSX.Element {
           ))}
           <Button
             text="Reload accounts"
-            mode="ghost"
+            tone="primary"
             disabled={!settings.apiKey || busy === 'accounts'}
             onClick={refreshAccounts}
           />
@@ -236,7 +268,8 @@ export function SettingsPanel(): React.JSX.Element {
 
         {accounts.length === 0 ? (
           <Text size={1} muted>
-            No accounts loaded yet.
+            No accounts loaded yet. If Zernio already has connected accounts, press “Reload
+            accounts” — and if the list stays empty, a profile filter may be hiding them.
           </Text>
         ) : (
           <Box
