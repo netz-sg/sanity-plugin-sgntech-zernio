@@ -297,13 +297,16 @@ export function Composer(props: {
                     <Flex align="center" gap={3}>
                       <Checkbox
                         checked={checked}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          // Read before the updater runs — by then React has
+                          // released the event and `currentTarget` is null.
+                          const {checked: on} = event.currentTarget
                           setAccountIds((current) =>
-                            event.currentTarget.checked
+                            on
                               ? [...current, account.accountId]
                               : current.filter((id) => id !== account.accountId),
                           )
-                        }
+                        }}
                       />
                       <PlatformIcon platform={account.platform} />
                       <Text size={1}>{account.name ?? account.username ?? account.accountId}</Text>
