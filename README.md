@@ -49,46 +49,105 @@ If that trade-off is not acceptable for your setup, do not use this plugin as it
 on a server and route the calls through it. The client in `src/lib/client.ts` takes a `baseUrl`, so
 pointing it at your own proxy is a small change.
 
-## Installation
+## Setup
+
+Five steps, about ten minutes, no code beyond the config block.
+
+### 1. Install
 
 ```sh
 npm install sanity-plugin-sgntech-zernio
 ```
 
-Requires Sanity Studio v5 or v6 and React 18 or 19. No runtime dependencies beyond `@sanity/ui`,
-which the Studio already ships.
+Sanity Studio v5 or v6, React 18 or 19. Nothing else to install — `@sanity/ui` and `@sanity/icons`
+come with the Studio.
 
-## Usage
+### 2. Add it to the config
 
 ```ts
 // sanity.config.ts
 import {defineConfig} from 'sanity'
-import {zernio} from 'sanity-plugin-sgntech-zernio'
+import {structureTool} from 'sanity/structure'
+import {zernio, zernioTypeNames} from 'sanity-plugin-sgntech-zernio'
+
+const zernioConfig = {
+  timezone: 'Europe/Berlin', // what new posts start with
+  relatedTypes: ['post', 'release'], // what a post may point at, optional
+}
 
 export default defineConfig({
-  // ...
+  name: 'default',
+  title: 'My Studio',
+  projectId: '…',
+  dataset: 'production',
+
   plugins: [
-    zernio({
-      relatedTypes: ['post', 'release'], // what a social post can point at
-      timezone: 'Europe/Berlin',
+    structureTool({
+      // Everything about posts and templates happens in the Zernio tool,
+      // so its types are kept out of the desk. Leave this out and they
+      // appear in the content list like any other document type.
+      structure: (S) =>
+        S.list()
+          .title('Content')
+          .items(
+            S.documentTypeListItems().filter(
+              (item) => !zernioTypeNames(zernioConfig).includes(item.getId() ?? ''),
+            ),
+          ),
     }),
+    zernio(zernioConfig),
   ],
 })
 ```
 
-Then open the **Zernio** tool, go to **Settings** and:
+Start the Studio. **Zernio** is now in the navigation, next to your content.
 
-1. paste the API key — it is checked immediately,
-2. press **Reload accounts**.
+### 3. Make an API key in Zernio
 
-That is all, provided the accounts are already connected in Zernio. Connecting is only for adding a
-new account, and it opens Zernio's own OAuth flow in a new tab.
+In Zernio, under API keys, create one that is
 
-A profile narrows which accounts are loaded. Leave it unset and every account of the workspace is
-offered; set one and only its accounts appear — if the list stays empty although Zernio has
-accounts, that filter is usually the reason. **Show all accounts** removes it again.
+- limited to a **single profile** (`profileIds`),
+- **read-write**, not `full` scope,
+- given an **expiry date**.
 
-Posts can be written before any of this; they just cannot be sent.
+The key is stored in your dataset and read by the browser — see
+[where the API key lives](#before-you-install-where-the-api-key-lives) above for why that matters.
+A `full` key can disconnect accounts and spend ad budget; the settings panel warns you if you paste
+one.
+
+### 4. Connect the Studio
+
+Open the **Zernio** tool → **Settings**:
+
+1. paste the key and press **Save and check** — it is verified against Zernio straight away, and
+   the badge turns to `stored`,
+2. press **Reload** under *Accounts*.
+
+Your connected Instagram and Facebook accounts appear as cards. That is the whole setup, provided
+the accounts are already connected in Zernio.
+
+If the list stays empty: a **profile** filter is the usual reason. Leave the profile unset to see
+every account in the workspace — *Show all accounts* removes an existing filter. **Connect a new …
+account** is only for adding an account Zernio does not have yet; it opens Zernio's own OAuth flow
+in a new tab, after which you press **Reload** again.
+
+Under *Defaults*, set the timezone Zernio should read scheduled times in, e.g. `Europe/Berlin`.
+
+### 5. Write the first post
+
+**Compose** is the first tab:
+
+1. give it an internal name, pick the post type (feed, carousel, story, reel),
+2. write the caption — the counter shows the platform limit and where the caption folds,
+3. **Add** an image or video; **Adjust** moves and zooms it inside the frame that post type will
+   show, with Instagram's safe zones on top for stories and reels,
+4. tick the accounts it goes to,
+5. **Publish now**, or leave the switch off and pick a time, then **Schedule**.
+
+The post is written as a document and handed to Zernio in one step. Everything else — the calendar,
+the list of what has been sent, the templates — is in the other tabs of the same tool.
+
+Posts can be written before any of the above; they just cannot be sent.
 
 ### Options
 
@@ -104,6 +163,19 @@ zernio({
   documentAction: true, // adds "Send to Zernio" to the document menu
 })
 ```
+
+If your dataset already has a `socialPost` type, give this one another name — `zernio({name:
+'zernioPost'})` — so the two schemas do not collide.
+
+## The tool, tab by tab
+
+| Tab | What it is for |
+| --- | --- |
+| **Compose** | Write a new post or edit an existing one, with the live preview and the send buttons next to it. |
+| **Calendar** | Month and week view of everything scheduled — yours and what already lives in Zernio. Drag a post to another day, or press **+** on a day to compose for it. |
+| **Posts** | Every post in this Studio, filterable by status and account, with thumbnails and links to what has been published. Below it, the posts that exist only in Zernio. |
+| **Templates** | Reusable captions, first comments and hashtag sets. |
+| **Settings** | API key, profile, connected accounts, default timezone. |
 
 ## How a post travels
 
@@ -124,7 +196,9 @@ to the post type stays untouched.
 ### Through the document, when a post needs review
 
 The document form is still a full editor, with the same preview and template picker, for teams that
-want posts to go through review before they are sent.
+want posts to go through review before they are sent. It needs the post type to be reachable in the
+desk, so leave the structure filter from [step 2](#2-add-it-to-the-config) out if you want this
+route.
 
 1. Create a `socialPost` in the desk, write it, have it reviewed, **publish the document**. The plugin sends the published version, never the draft — what goes out has to be what was reviewed.
 2. Hit **Send to Zernio**, from the document menu or from the list in the tool.
@@ -136,31 +210,6 @@ link.
 Nothing is polled while the tool is closed — the status then updates the next time somebody opens
 it. Webhooks would be the alternative, and they need a server; this plugin deliberately does not
 require one.
-
-## Keeping the types out of the desk
-
-The plugin's document types are already gone from the global create menu. To hide them from the
-desk structure as well — everything about them is done in the tool — filter them out:
-
-```ts
-import {structureTool} from 'sanity/structure'
-import {zernio, zernioTypeNames} from 'sanity-plugin-sgntech-zernio'
-
-const zernioConfig = {timezone: 'Europe/Berlin'}
-const hidden = zernioTypeNames(zernioConfig)
-
-export default defineConfig({
-  plugins: [
-    structureTool({
-      structure: (S) =>
-        S.list()
-          .title('Content')
-          .items(S.documentTypeListItems().filter((item) => !hidden.includes(item.getId() ?? ''))),
-    }),
-    zernio(zernioConfig),
-  ],
-})
-```
 
 ## Templates
 
@@ -206,11 +255,17 @@ on Instagram.
 Images are delivered as Sanity CDN URLs with the image pipeline doing the work:
 
 ```
-https://cdn.sanity.io/images/…jpg?w=1080&h=1350&fit=crop&crop=entropy&auto=format&q=90
+https://cdn.sanity.io/images/…jpg?w=1080&h=1350&fit=crop&rect=600,0,800,1000&auto=format&q=90
 ```
 
-Feed and carousel get 1080×1350, story and reel 1080×1920. Videos are passed through untouched —
-the image pipeline cannot transcode them, so they have to arrive in the right format.
+Feed and carousel get 1080×1350, story and reel 1080×1920. What is cropped away is decided in this
+order: the crop you set with **Adjust** (`rect=`), otherwise the image's hotspot
+(`crop=focalpoint`), otherwise the pipeline's own guess (`crop=entropy`). The crop is stored in
+Sanity's own `crop` shape, so the image field's crop tool and the tool's editor change the same
+thing.
+
+Videos are passed through untouched — the image pipeline cannot transcode them, so they have to
+arrive in the right format.
 
 The preview says when an image will be cropped, and the validation blocks files above the
 platform's limit (8 MB on Instagram, 4 MB on Facebook).
@@ -243,7 +298,7 @@ points at your own proxy just as happily as at Zernio.
 - Only Instagram and Facebook are validated and previewed. Zernio speaks to twelve more platforms; posts to those are not blocked, they simply get Instagram's stricter rules applied.
 - No webhooks, so no status updates while the Studio is closed.
 - Carousels and stories share one caption per post; per-account captions would need one post per account.
-- The Media Library's own crop is not applied — the delivery URL crops by entropy, not by hotspot.
+- Videos are sent as they are: no transcoding, no cover frame, no trimming.
 
 ## Develop
 
