@@ -1,19 +1,6 @@
 import {ComposeIcon} from '@sanity/icons/Compose'
 import {RefreshIcon} from '@sanity/icons/Refresh'
-import {
-  Badge,
-  Button,
-  Card,
-  Container,
-  Flex,
-  Heading,
-  Spinner,
-  Stack,
-  TabList,
-  Tab,
-  TabPanel,
-  Text,
-} from '@sanity/ui'
+import {Box, Button, Card, Container, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useCallback, useState} from 'react'
 
 import {usePosts} from '../hooks/usePosts'
@@ -25,8 +12,33 @@ import {Composer} from './Composer'
 import {PostDetail} from './PostDetail'
 import {PostList} from './PostList'
 import {SettingsPanel} from './SettingsPanel'
+import {ensureZernioStyles} from './styles'
 import {TemplatePanel} from './TemplatePanel'
 import {ZernioIcon} from './ZernioIcon'
+
+type TabValue = 'compose' | 'calendar' | 'posts' | 'templates' | 'settings'
+
+const TABS: {value: TabValue; label: string}[] = [
+  {value: 'compose', label: 'Compose'},
+  {value: 'calendar', label: 'Calendar'},
+  {value: 'posts', label: 'Posts'},
+  {value: 'templates', label: 'Templates'},
+  {value: 'settings', label: 'Settings'},
+]
+
+/** Green when the tool can talk to Zernio, amber while it cannot. */
+function StatusDot(props: {ok: boolean}): React.JSX.Element {
+  return (
+    <Box
+      style={{
+        width: 7,
+        height: 7,
+        borderRadius: '50%',
+        background: props.ok ? '#16a34a' : '#d97706',
+      }}
+    />
+  )
+}
 
 /**
  * Props the plugin hands to the tool.
@@ -44,11 +56,10 @@ export interface ZernioToolProps {
  * @public
  */
 export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Element {
+  ensureZernioStyles()
   const documentType = props.options?.documentType ?? 'socialPost'
   const templateType = props.options?.templateType ?? 'zernioTemplate'
-  const [tab, setTab] = useState<'compose' | 'calendar' | 'posts' | 'templates' | 'settings'>(
-    'compose',
-  )
+  const [tab, setTab] = useState<TabValue>('compose')
   const [composeDay, setComposeDay] = useState<string | undefined>()
   const [editingPost, setEditingPost] = useState<SocialPostValue | undefined>()
   const [detailId, setDetailId] = useState<string | undefined>()
@@ -115,27 +126,24 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
   const configured = Boolean(settings.apiKey)
 
   return (
-    <Container width={5} padding={4}>
+    <Container width={5} padding={4} className="zn-shell">
       <Stack gap={4}>
         <Flex align="center" gap={3} wrap="wrap">
-          <Card padding={2} radius={2} tone="primary">
-            <Text size={2}>
+          <div className="zn-brand">
+            <Text size={2} style={{color: '#fff'}}>
               <ZernioIcon />
             </Text>
-          </Card>
-          <Stack gap={2} flex={1} style={{minWidth: 200}}>
+          </div>
+          <Stack gap={2} flex={1} style={{minWidth: 180}}>
+            <Heading size={2}>Zernio</Heading>
             <Flex align="center" gap={2}>
-              <Heading size={2}>Zernio</Heading>
-              {configured ? (
-                <Badge tone="positive">connected</Badge>
-              ) : (
-                <Badge tone="caution">not set up</Badge>
-              )}
+              <StatusDot ok={configured} />
+              <Text size={0} muted>
+                {configured ? 'Connected' : 'Not set up'} · {posts.length} post
+                {posts.length === 1 ? '' : 's'}
+                {remote.length > 0 ? ` · ${remote.length} in Zernio only` : ''}
+              </Text>
             </Flex>
-            <Text size={1} muted>
-              {posts.length} post{posts.length === 1 ? '' : 's'} in this Studio
-              {remote.length > 0 ? ` · ${remote.length} more in Zernio` : ''}
-            </Text>
           </Stack>
           {(loading || settingsLoading) && <Spinner muted />}
           <Button text="Refresh" icon={RefreshIcon} mode="bleed" onClick={refresh} />
@@ -174,45 +182,25 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
           />
         ) : (
           <>
-            <TabList gap={2}>
-              <Tab
-                id="compose-tab"
-                aria-controls="compose-panel"
-                label="Compose"
-                selected={tab === 'compose'}
-                onClick={() => setTab('compose')}
-              />
-              <Tab
-                id="calendar-tab"
-                aria-controls="calendar-panel"
-                label="Calendar"
-                selected={tab === 'calendar'}
-                onClick={() => setTab('calendar')}
-              />
-              <Tab
-                id="posts-tab"
-                aria-controls="posts-panel"
-                label={`Posts (${posts.length})`}
-                selected={tab === 'posts'}
-                onClick={() => setTab('posts')}
-              />
-              <Tab
-                id="templates-tab"
-                aria-controls="templates-panel"
-                label="Templates"
-                selected={tab === 'templates'}
-                onClick={() => setTab('templates')}
-              />
-              <Tab
-                id="settings-tab"
-                aria-controls="settings-panel"
-                label="Settings"
-                selected={tab === 'settings'}
-                onClick={() => setTab('settings')}
-              />
-            </TabList>
+            <div className="zn-nav" role="tablist" aria-label="Zernio sections">
+              {TABS.map((entry) => (
+                <button
+                  key={entry.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === entry.value}
+                  onClick={() => setTab(entry.value)}
+                >
+                  <span className="zn-nav-dot" />
+                  {entry.label}
+                  {entry.value === 'posts' && posts.length > 0 && (
+                    <span className="zn-nav-count">{posts.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-            <TabPanel id="compose-panel" aria-labelledby="compose-tab" hidden={tab !== 'compose'}>
+            {tab === 'compose' && (
               <Composer
                 key={composeKey}
                 documentType={documentType}
@@ -227,13 +215,9 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
                 }}
                 onNewTemplate={() => setTab('templates')}
               />
-            </TabPanel>
+            )}
 
-            <TabPanel
-              id="calendar-panel"
-              aria-labelledby="calendar-tab"
-              hidden={tab !== 'calendar'}
-            >
+            {tab === 'calendar' && (
               <CalendarView
                 posts={posts}
                 remote={remote}
@@ -241,9 +225,9 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
                 onChanged={refresh}
                 onCreate={create}
               />
-            </TabPanel>
+            )}
 
-            <TabPanel id="posts-panel" aria-labelledby="posts-tab" hidden={tab !== 'posts'}>
+            {tab === 'posts' && (
               <PostList
                 posts={posts}
                 remote={remote}
@@ -251,23 +235,11 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
                 onChanged={refresh}
                 onCreate={() => create()}
               />
-            </TabPanel>
+            )}
 
-            <TabPanel
-              id="templates-panel"
-              aria-labelledby="templates-tab"
-              hidden={tab !== 'templates'}
-            >
-              <TemplatePanel templateType={templateType} />
-            </TabPanel>
+            {tab === 'templates' && <TemplatePanel templateType={templateType} />}
 
-            <TabPanel
-              id="settings-panel"
-              aria-labelledby="settings-tab"
-              hidden={tab !== 'settings'}
-            >
-              <SettingsPanel />
-            </TabPanel>
+            {tab === 'settings' && <SettingsPanel />}
           </>
         )}
       </Stack>

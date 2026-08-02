@@ -17,7 +17,8 @@ import {
 } from '../lib/calendar'
 import type {RemotePost, SocialPostValue} from '../lib/types'
 import {PlatformIcon} from './PlatformIcon'
-import {STATUS_TONE, Toolbar} from './ui'
+import {ensureZernioStyles} from './styles'
+import {Segmented, Toolbar} from './ui'
 
 const API_VERSION = '2024-10-01'
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -40,6 +41,7 @@ export function CalendarView(props: {
   onCreate?: (dayKey: string) => void
 }): React.JSX.Element {
   const {posts, remote = [], onOpen, onChanged, onCreate} = props
+  ensureZernioStyles()
   const client = useClient({apiVersion: API_VERSION})
 
   const today = useMemo(() => new Date(), [])
@@ -115,26 +117,14 @@ export function CalendarView(props: {
               : `Week of ${days[0]?.key ?? ''}`}
           </Text>
         </Box>
-        <Card padding={1} radius={2} tone="transparent" border>
-          <Flex gap={1}>
-            <Button
-              text="Month"
-              mode={mode === 'month' ? 'default' : 'bleed'}
-              tone={mode === 'month' ? 'primary' : 'default'}
-              fontSize={1}
-              padding={2}
-              onClick={() => setMode('month')}
-            />
-            <Button
-              text="Week"
-              mode={mode === 'week' ? 'default' : 'bleed'}
-              tone={mode === 'week' ? 'primary' : 'default'}
-              fontSize={1}
-              padding={2}
-              onClick={() => setMode('week')}
-            />
-          </Flex>
-        </Card>
+        <Segmented
+          value={mode}
+          options={[
+            {value: 'month', label: 'Month'},
+            {value: 'week', label: 'Week'},
+          ]}
+          onChange={setMode}
+        />
       </Toolbar>
 
       <Box style={{display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6}}>
@@ -151,53 +141,50 @@ export function CalendarView(props: {
           const external = remoteDays.get(day.key) ?? []
 
           return (
-            <Card
+            <Box
               key={day.key}
+              className="zn-card zn-daycell"
               padding={2}
-              radius={3}
-              border
-              tone={day.inMonth ? 'default' : 'transparent'}
               style={{
                 minHeight: mode === 'month' ? 104 : 240,
-                outline: day.isToday ? '1px solid var(--card-focus-ring-color)' : undefined,
+                opacity: day.inMonth ? 1 : 0.55,
+                outline: day.isToday ? '2px solid #ff5500' : undefined,
+                outlineOffset: -1,
               }}
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => void drop(day.key)}
             >
               <Stack gap={2}>
                 <Flex align="center" gap={1}>
-                  <Text
-                    size={0}
-                    muted={!day.inMonth}
-                    weight={day.isToday ? 'semibold' : 'regular'}
-                  >
+                  <Text size={0} muted={!day.inMonth} weight={day.isToday ? 'semibold' : 'regular'}>
                     {day.date.getDate()}
                   </Text>
                   <Box flex={1} />
                   {onCreate && (
-                    <Button
-                      icon={AddIcon}
-                      mode="bleed"
-                      padding={1}
-                      fontSize={0}
-                      title={`New post on ${day.key}`}
-                      aria-label={`New post on ${day.key}`}
-                      onClick={() => onCreate(day.key)}
-                    />
+                    <span className="zn-add">
+                      <Button
+                        icon={AddIcon}
+                        mode="bleed"
+                        padding={1}
+                        fontSize={0}
+                        title={`New post on ${day.key}`}
+                        aria-label={`New post on ${day.key}`}
+                        onClick={() => onCreate(day.key)}
+                      />
+                    </span>
                   )}
                 </Flex>
 
                 {entries.map((post) => (
-                  <Card
+                  <button
                     key={post._id}
-                    padding={2}
-                    radius={2}
-                    tone={STATUS_TONE[post.status ?? 'draft'] ?? 'default'}
+                    type="button"
+                    className="zn-event"
+                    aria-label={`Open ${post.title ?? 'post'}`}
                     draggable={post.status !== 'published'}
                     onDragStart={() => setDragging(post._id)}
                     onDragEnd={() => setDragging(undefined)}
                     onClick={() => onOpen(post)}
-                    style={{cursor: 'pointer'}}
                   >
                     <Stack gap={2}>
                       <Flex align="center" gap={1}>
@@ -216,18 +203,11 @@ export function CalendarView(props: {
                         {post.title}
                       </Text>
                     </Stack>
-                  </Card>
+                  </button>
                 ))}
 
                 {external.map((post) => (
-                  <Card
-                    key={post.id}
-                    padding={2}
-                    radius={2}
-                    tone="transparent"
-                    border
-                    style={{borderStyle: 'dashed'}}
-                  >
+                  <div key={post.id} className="zn-event zn-event--remote">
                     <Stack gap={2}>
                       <Flex align="center" gap={1}>
                         {[...new Set(post.platforms.map((entry) => entry.platform))].map(
@@ -243,10 +223,10 @@ export function CalendarView(props: {
                         {post.content ?? 'in Zernio'}
                       </Text>
                     </Stack>
-                  </Card>
+                  </div>
                 ))}
               </Stack>
-            </Card>
+            </Box>
           )
         })}
       </Box>

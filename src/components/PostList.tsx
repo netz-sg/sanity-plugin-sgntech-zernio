@@ -11,6 +11,7 @@ import {sendPost} from '../lib/send'
 import type {RemotePost, SocialPostValue} from '../lib/types'
 import {PlatformIcon} from './PlatformIcon'
 import {RemotePostGrid} from './RemotePostGrid'
+import {ensureZernioStyles} from './styles'
 import {EmptyState, StatusPill, Toolbar} from './ui'
 
 const API_VERSION = '2024-10-01'
@@ -37,32 +38,15 @@ function Thumbnail(props: {post: SocialPostValue}): React.JSX.Element {
   const url = !isVideo(first) ? deliveryUrl(first, props.post.kind) : undefined
 
   return (
-    <Card
-      radius={2}
-      border
-      overflow="hidden"
-      style={{
-        width: 56,
-        height: 56,
-        flex: 'none',
-        background: 'var(--card-muted-bg-color, rgba(127,127,127,.12))',
-      }}
-    >
+    <div className="zn-thumb" style={{width: 60, height: 60}}>
       {url ? (
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
-        />
+        <img src={url} alt="" loading="lazy" />
       ) : (
-        <Flex align="center" justify="center" style={{height: '100%'}}>
-          <Text size={0} muted>
-            {first ? 'video' : '—'}
-          </Text>
-        </Flex>
+        <Text size={0} muted>
+          {first ? 'video' : '—'}
+        </Text>
       )}
-    </Card>
+    </div>
   )
 }
 
@@ -80,6 +64,7 @@ export function PostList(props: {
   onCreate?: () => void
 }): React.JSX.Element {
   const {posts, remote = [], onOpen, onChanged, onCreate} = props
+  ensureZernioStyles()
   const client = useClient({apiVersion: API_VERSION})
   const {settings} = useZernioSettings()
   const zernio = useZernioClient(settings.apiKey)
@@ -166,15 +151,15 @@ export function PostList(props: {
           const links = (post.results ?? []).filter((result) => result.url)
 
           return (
-            <Card key={post._id} padding={3} radius={3} border>
-              <Flex align="center" gap={3} wrap="wrap">
+            <Box key={post._id} className="zn-card zn-card--hover">
+              <Flex align="center" gap={3} wrap="wrap" padding={3}>
                 <Thumbnail post={post} />
 
                 <Stack gap={3} flex={1} style={{minWidth: 220}}>
                   <Flex align="center" gap={2} wrap="wrap">
                     <Text
                       size={1}
-                      weight="medium"
+                      weight="semibold"
                       onClick={() => onOpen(post)}
                       style={{cursor: 'pointer'}}
                     >
@@ -204,7 +189,12 @@ export function PostList(props: {
                   {links.length > 0 && (
                     <Flex gap={3} wrap="wrap">
                       {links.map((result) => (
-                        <a key={result.url} href={result.url} target="_blank" rel="noreferrer noopener">
+                        <a
+                          key={result.url}
+                          href={result.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
                           <Flex align="center" gap={1}>
                             <PlatformIcon platform={result.platform} size={12} />
                             <Text size={0}>open ↗</Text>
@@ -216,7 +206,12 @@ export function PostList(props: {
                 </Stack>
 
                 <Flex gap={2}>
-                  <Button text="Open" icon={ComposeIcon} mode="ghost" onClick={() => onOpen(post)} />
+                  <Button
+                    text="Open"
+                    icon={ComposeIcon}
+                    mode="ghost"
+                    onClick={() => onOpen(post)}
+                  />
                   <Button
                     text={post.zernioPostId ? 'Sent' : 'Send'}
                     icon={PublishIcon}
@@ -228,7 +223,7 @@ export function PostList(props: {
                   />
                 </Flex>
               </Flex>
-            </Card>
+            </Box>
           )
         })}
 

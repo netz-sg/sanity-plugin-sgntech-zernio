@@ -26,8 +26,9 @@ import type {PostKind, PostStatus, SocialMediaItem, SocialPostValue} from '../li
 import {MediaEditor} from './MediaEditor'
 import {PlatformIcon} from './PlatformIcon'
 import {PostPreview} from './PostPreview'
+import {ensureZernioStyles} from './styles'
 import {TemplateBar} from './TemplateBar'
-import {StatusPill} from './ui'
+import {Chip, Segmented, StatusPill} from './ui'
 
 const API_VERSION = '2024-10-01'
 
@@ -97,6 +98,7 @@ export function Composer(props: {
     onDeleted,
     onNewTemplate,
   } = props
+  ensureZernioStyles()
   const client = useClient({apiVersion: API_VERSION})
   const {settings} = useZernioSettings()
   const zernio = useZernioClient(settings.apiKey)
@@ -306,10 +308,9 @@ export function Composer(props: {
         alignItems: 'stretch',
       }}
     >
-      <Card
+      <Box
+        className="zn-card zn-shell"
         padding={3}
-        radius={3}
-        border
         style={{display: 'flex', flexDirection: 'column', minHeight: 0, gap: 12}}
       >
         <Flex align="center" gap={2} wrap="wrap">
@@ -325,22 +326,12 @@ export function Composer(props: {
           {sent && <Badge tone="primary">in Zernio</Badge>}
         </Flex>
 
-        <Flex gap={2} align="center" wrap="wrap">
-          <Card padding={1} radius={2} border tone="transparent">
-            <Flex gap={1}>
-              {KINDS.map((entry) => (
-                <Button
-                  key={entry.value}
-                  text={entry.label}
-                  mode={kind === entry.value ? 'default' : 'bleed'}
-                  tone={kind === entry.value ? 'primary' : 'default'}
-                  fontSize={1}
-                  padding={2}
-                  onClick={() => setKind(entry.value)}
-                />
-              ))}
-            </Flex>
-          </Card>
+        <Flex gap={3} align="center" wrap="wrap">
+          <Segmented
+            value={kind}
+            options={KINDS.map((entry) => ({value: entry.value, label: entry.label}))}
+            onChange={setKind}
+          />
           <Text size={0} muted>
             {KINDS.find((entry) => entry.value === kind)?.note}
           </Text>
@@ -493,15 +484,10 @@ export function Composer(props: {
           {accounts.map((account) => {
             const checked = accountIds.includes(account.accountId)
             return (
-              <Card
+              <Chip
                 key={account.accountId}
-                as="button"
-                padding={2}
-                radius={4}
-                border
-                tone={checked ? 'primary' : 'default'}
                 pressed={checked}
-                style={{cursor: 'pointer'}}
+                icon={<PlatformIcon platform={account.platform} size={14} />}
                 onClick={() =>
                   setAccountIds((current) =>
                     checked
@@ -510,12 +496,8 @@ export function Composer(props: {
                   )
                 }
               >
-                <Flex align="center" gap={2} paddingX={1}>
-                  <PlatformIcon platform={account.platform} size={13} />
-                  <Text size={0}>{account.name ?? account.username ?? account.accountId}</Text>
-                  {checked && <Text size={0}>✓</Text>}
-                </Flex>
-              </Card>
+                {account.name ?? account.username ?? account.accountId}
+              </Chip>
             )
           })}
         </Flex>
@@ -613,7 +595,7 @@ export function Composer(props: {
             </Text>
           </Card>
         )}
-      </Card>
+      </Box>
 
       <Box style={{overflowY: 'auto', overflowX: 'hidden', paddingRight: 4}}>
         <PostPreview value={value} size="large" showIssues={false} />
