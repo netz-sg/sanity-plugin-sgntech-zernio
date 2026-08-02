@@ -18,15 +18,16 @@
 
 ## What you get
 
-- **Write and publish inside the tool.** The **Compose** tab is a full post editor: caption, first comment, media upload, accounts, time, live preview, one button to publish or schedule. Nobody has to walk through the document form to get something out.
-- **Templates** for caption, first comment and hashtags — one document, three parts, applied together or one at a time. `{{title}}`, `{{date}}`, `{{time}}`, `{{kind}}` and `{{accounts}}` are filled in; unknown placeholders stay visible so it is obvious what is still missing. Available in the composer and in the document form.
-- **Move and zoom the image** in the tool, in the frame the post type will show, and switch Instagram's **safe zones** on to see what the profile row, the reply bar or the reel buttons will cover. The crop is stored in Sanity's own `crop` shape, so the image field's crop tool and this one edit the same thing.
-- **Posts are documents.** Every post is still a `socialPost` in your dataset, so it gets version history, roles, review — and a reference to the article or release it belongs to. That is the reason to do this in Sanity rather than in a separate dashboard.
-- **A cockpit tool**: composer, month and week calendar with drag-and-drop rescheduling, a filtered post list, template management, and a settings panel. Writing, editing, scheduling, sending and deleting all happen here — nothing sends you to the desk.
-- **Previews that look like the app** — the Instagram feed card with its profile row and action bar, the story with its progress bars and reply field, the reel with its side rail, the Facebook post with its Like/Comment/Share row. Right geometry per post type (4:5 for feed and carousel, 9:16 for story and reel) and the caption folded where the platform folds it: 125 characters on Instagram, 480 on Facebook.
+- **One place for everything.** Compose, calendar, post list, detail pages, templates and settings are all in the Zernio tool. Writing, scheduling, sending, editing and deleting never send you to the desk.
+- **A composer that fits on one screen.** No scrolling: the caption grows into the space that is left, media and accounts are single strips, and scheduling sits next to the send button.
+- **Previews that look like the app.** The Instagram feed card with its profile row and action bar, the story with progress bars and reply field, the reel with its side rail, the Facebook post with its Like/Comment/Share row — in the right geometry per post type and with the caption folded where the platform folds it, at 125 characters on Instagram and 480 on Facebook.
+- **A page per post.** Open one from the calendar or the list: caption, media, accounts, schedule, and what Zernio reported per platform, with edit, duplicate, status check, send and delete on it.
+- **Move and zoom the picture** inside the frame the post type will show, with Instagram's **safe zones** on top so nothing important lands under the profile row or the reel buttons. The crop is stored in Sanity's own `crop` shape, so the image field's crop tool and this one edit the same thing.
+- **Templates** for caption, first comment and hashtags — one template, three parts, applied together or one at a time. `{{title}}`, `{{date}}`, `{{time}}`, `{{kind}}` and `{{accounts}}` are filled in; unknown placeholders stay visible so it is obvious what is still missing.
+- **Posts are documents.** Every post is a `socialPost` in your dataset, so it gets version history, roles, review — and a reference to the article or release it belongs to. That is the reason to do this in Sanity rather than in a separate dashboard.
 - **Validation while writing**, per platform and post type: media count, file size, aspect ratio, caption length. What the API would reject is an error; what the platform would crop or hide is a warning.
-- **Media without uploads.** Images are handed over as Sanity CDN URLs, cropped by the image pipeline to what the post type expects. Nothing is copied, nothing is uploaded twice.
-- **Everything Zernio knows, not just your own work.** The calendar shows posts written in Zernio's dashboard or by another tool, and the list shows them as cards with their image, platform icons and a link to the published post — otherwise a calendar looks complete while hiding half the schedule.
+- **Media without a second upload.** Images go over as Sanity CDN URLs, cropped by the image pipeline to what the post type expects. Nothing is copied to a third place.
+- **Everything Zernio knows, not only your own work.** The calendar and the list also show posts written in Zernio's dashboard or by another tool, marked as external.
 - **Status write-back.** While the tool is open it asks Zernio about posts in flight and writes status, links to the published posts and errors back onto the document.
 - Instagram feed, carousel, story and reel · Facebook feed, story and reel.
 
@@ -167,36 +168,37 @@ zernio({
 If your dataset already has a `socialPost` type, give this one another name — `zernio({name:
 'zernioPost'})` — so the two schemas do not collide.
 
-## The tool, tab by tab
+## The tool, screen by screen
 
-| Tab | What it is for |
+| Screen | What it is for |
 | --- | --- |
-| **Compose** | Write a new post or edit an existing one on a single screen that never scrolls: the caption grows into the space that is left, the preview stands next to it, and scheduling and sending sit in the bar at the bottom. |
-| **Calendar** | Month and week view of everything scheduled — yours and what already lives in Zernio. Drag a post to another day, or press **+** on a day to compose for it. |
-| **Posts** | Every post in this Studio, filterable by status and account, with thumbnails and links to what has been published. Below it, the posts that exist only in Zernio. |
-| **Post detail** | Opened from the calendar or the list: caption, media, accounts, schedule, what Zernio reported per platform, and the actions — edit, duplicate, check status, send, delete. |
-| **Templates** | Reusable captions, first comments and hashtag sets. |
-| **Settings** | API key, profile, connected accounts, default timezone. |
+| **Compose** | Write a new post or edit an existing one on a single screen that does not scroll. Post type, template, caption with a character counter that names the fold, first comment, media strip, account chips, and a bar with the time and the send buttons. The preview stands next to it, one frame per platform, stacked. |
+| **Calendar** | Month and week view of everything scheduled — yours and what lives only in Zernio. Drag a post to another day to move it, keeping its time. Hover a day for its **+** to compose for that date. |
+| **Posts** | Every post in this Studio with thumbnail, platform icons, status and time, filterable by status and account. Below it, the posts that exist only in Zernio, as cards with their picture and a link. |
+| **Post detail** | Opened from the calendar or the list. Caption, first comment, media, accounts, schedule, Zernio id, and what Zernio reported per platform — with **Edit**, **Duplicate**, **Check status**, **Send** and **Delete**. |
+| **Templates** | Write, change and delete templates: name, caption, first comment, hashtags, and whether the hashtags go into the caption or the first comment. |
+| **Settings** | API key, profile filter, connected accounts, default timezone. |
 
 ## How a post travels
 
-### From the tool, in one go
+1. **Compose** in the tool — or press **+** on a day in the calendar, which opens the composer on that date.
+2. Pick the post type, write the caption, apply a template if there is one.
+3. **Add** an image or video. **Adjust** moves and zooms it inside the frame that post type shows; for stories and reels the safe zones show what Instagram covers up.
+4. Tick the accounts. The preview redraws for every platform you picked.
+5. **Publish now**, or leave the switch off, pick a time and **Schedule**.
 
-1. **Compose** in the Zernio tool — or the small **+** on a day in the calendar, which opens the composer on that day.
-2. Write it: caption, first comment, media, post type, accounts, time. Pick a template if there is one. The preview next to it shows the crop and the fold while you type.
-3. **Adjust** a picture to move and zoom it inside the frame; for stories and reels the safe zones show what Instagram covers up.
-4. **Publish now** or **Schedule**. The document is written and handed to Zernio in the same step; the composer stays open for the next post.
+The document is written and handed to Zernio in one step. Media added in the tool is uploaded to
+Sanity's asset store first, so it lands in your media library like any other image — the tool never
+sends a file to Zernio, only a URL.
 
-Media added here is uploaded to Sanity's asset store first, so it ends up in your media library like
-any other image — the tool never sends a file to Zernio, only a URL.
-
-Clicking a post in the calendar or the list opens it in the composer again: change it, save it,
-send it, delete it. **Save** only touches the fields the composer owns, so anything a project added
-to the post type stays untouched.
+Afterwards the post has its own page, reachable from the calendar and the list: check what Zernio
+reported, send it again, duplicate it as the starting point for the next one, or delete it.
+**Save** in the composer only touches the fields the composer owns, so anything a project added to
+the post type stays untouched.
 
 ### Through the document, when a post needs review
 
-The document form is still a full editor, with the same preview and template picker, for teams that
+The document form is a full editor too, with the same preview and template picker, for teams that
 want posts to go through review before they are sent. It needs the post type to be reachable in the
 desk, so leave the structure filter from [step 2](#2-add-it-to-the-config) out if you want this
 route.
@@ -208,9 +210,9 @@ Either way Zernio schedules or publishes it, the document keeps the Zernio post 
 tool is open the status is refreshed every 30 seconds until it settles — every published post gets a
 link.
 
-Nothing is polled while the tool is closed — the status then updates the next time somebody opens
-it. Webhooks would be the alternative, and they need a server; this plugin deliberately does not
-require one.
+Nothing is polled while the tool is closed; the status then updates the next time somebody opens it.
+Webhooks would be the alternative, and they need a server, which this plugin deliberately does not
+require.
 
 ## Templates
 
@@ -271,6 +273,32 @@ arrive in the right format.
 The preview says when an image will be cropped, and the validation blocks files above the
 platform's limit (8 MB on Instagram, 4 MB on Facebook).
 
+## Look and feel
+
+The tool brings one stylesheet, injected once and written against the Studio's own CSS variables
+(`--card-bg-color`, `--card-border-color`, …), so it follows your workspace theme in light and dark
+instead of painting over it. It carries only what component props cannot express: hover, focus,
+transitions, and the Zernio accent on active navigation, selected chips and today's date.
+
+The building blocks are exported, in case you want the same look in your own panels:
+
+```ts
+import {
+  Section, // titled block with a small-caps label
+  Field, // label, description, hint on the right
+  Chip, // toggle shaped like a tag
+  Segmented, // exclusive choice
+  StatusPill, // dotted status with a colour per state
+  EmptyState,
+  Toolbar,
+  PlatformFrame, // one post as Instagram or Facebook draws it
+} from 'sanity-plugin-sgntech-zernio'
+```
+
+`PlatformFrame` is self-contained: give it a `platform`, a `kind`, a post value and a `width`, and
+it draws the app's own chrome around it. Everything inside is sized in `em` against one root font
+size, so a frame is the same design at 150 px and at 400 px.
+
 ## Two entry points
 
 The Studio side is the default entry. Everything that has nothing to do with the Studio — the
@@ -300,12 +328,13 @@ points at your own proxy just as happily as at Zernio.
 - No webhooks, so no status updates while the Studio is closed.
 - Carousels and stories share one caption per post; per-account captions would need one post per account.
 - Videos are sent as they are: no transcoding, no cover frame, no trimming.
+- The preview draws the app's chrome, not the app: no like counts, no comments, no fonts from Meta.
 
 ## Develop
 
 ```sh
 npm install
-npm test            # rules, payload, media and calendar
+npm test            # rules, payload, media, crop and template logic
 npm run lint
 npm run build
 npm run link-watch
