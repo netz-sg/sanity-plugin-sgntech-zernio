@@ -3,19 +3,7 @@ import {CropIcon} from '@sanity/icons/Crop'
 import {ImageIcon} from '@sanity/icons/Image'
 import {PublishIcon} from '@sanity/icons/Publish'
 import {TrashIcon} from '@sanity/icons/Trash'
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  Checkbox,
-  Flex,
-  Stack,
-  Switch,
-  Text,
-  TextArea,
-  TextInput,
-} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Stack, Switch, Text, TextArea, TextInput} from '@sanity/ui'
 import {useCallback, useMemo, useRef, useState} from 'react'
 import {useClient} from 'sanity'
 
@@ -297,316 +285,318 @@ export function Composer(props: {
     <Box
       style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(280px, 340px)',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 400px)',
         alignItems: 'start',
         gap: 16,
       }}
     >
-      <Stack gap={3}>
-        <Section
-          title={postId ? 'Editing a post' : 'New post'}
-          actions={
-            <Flex gap={2} align="center">
-              {postId && <StatusPill status={status} />}
-              {sent && <Badge tone="primary">in Zernio</Badge>}
-            </Flex>
-          }
-        >
-          <Stack gap={4}>
-            <Field label="Internal name" description="Only ever shown inside the Studio.">
-              <TextInput
-                value={title}
-                onChange={(event) => setTitle(event.currentTarget.value)}
-                placeholder="Album announcement"
-              />
-            </Field>
-
-            <Field label="Post type">
-              <Box
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                  gap: 8,
-                }}
-              >
-                {KINDS.map((entry) => {
-                  const active = kind === entry.value
-                  return (
-                    <Card
-                      key={entry.value}
-                      as="button"
-                      padding={3}
-                      radius={2}
-                      border
-                      tone={active ? 'primary' : 'default'}
-                      pressed={active}
-                      onClick={() => setKind(entry.value)}
-                      style={{cursor: 'pointer', textAlign: 'left'}}
-                    >
-                      <Stack gap={2}>
-                        <Text size={1} weight="medium">
-                          {entry.label}
-                        </Text>
-                        <Text size={0} muted>
-                          {entry.note}
-                        </Text>
-                      </Stack>
-                    </Card>
-                  )
-                })}
-              </Box>
-            </Field>
-          </Stack>
-        </Section>
-
-        <Section title="Text">
-          <Stack gap={4}>
-            <TemplateBar
-              templateType={templateType}
-              post={value}
-              onCreate={onNewTemplate}
-              onApply={(patch) => {
-                if (patch.content !== undefined) setContent(patch.content)
-                if (patch.firstComment !== undefined) setFirstComment(patch.firstComment)
-              }}
-            />
-
-            <Field label="Caption" hint={captionHint}>
-              <TextArea
-                rows={7}
-                value={content}
-                onChange={(event) => setContent(event.currentTarget.value)}
-                placeholder="What goes out…"
-              />
-            </Field>
-
-            {(kind === 'feed' || kind === 'carousel') && (
-              <Field
-                label="First comment"
-                description="Posted right after publishing. Instagram feed and carousel only."
-              >
-                <TextArea
-                  rows={2}
-                  value={firstComment}
-                  onChange={(event) => setFirstComment(event.currentTarget.value)}
-                  placeholder="All links in the bio"
+      <Box
+        style={{
+          maxHeight: 'calc(100vh - 150px)',
+          overflowY: 'auto',
+          paddingRight: 4,
+        }}
+      >
+        <Stack gap={3}>
+          <Section
+            title={postId ? 'Editing a post' : 'New post'}
+            actions={
+              <Flex gap={2} align="center">
+                {postId && <StatusPill status={status} />}
+                {sent && <Badge tone="primary">in Zernio</Badge>}
+              </Flex>
+            }
+          >
+            <Stack gap={4}>
+              <Field label="Internal name" description="Only ever shown inside the Studio.">
+                <TextInput
+                  value={title}
+                  onChange={(event) => setTitle(event.currentTarget.value)}
+                  placeholder="Album announcement"
                 />
               </Field>
-            )}
-          </Stack>
-        </Section>
 
-        <Section
-          title="Media"
-          actions={
-            <Button
-              text="Add"
-              icon={AddIcon}
-              mode="ghost"
-              fontSize={1}
-              disabled={busy === 'upload'}
-              onClick={() => fileInput.current?.click()}
-            />
-          }
-        >
-          <Stack gap={3}>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              hidden
-              onChange={(event) => void upload(event.currentTarget.files)}
-            />
+              <Field label="Post type" hint={KINDS.find((entry) => entry.value === kind)?.note}>
+                <Card padding={1} radius={2} border tone="transparent">
+                  <Flex gap={1}>
+                    {KINDS.map((entry) => (
+                      <Box key={entry.value} flex={1}>
+                        <Button
+                          text={entry.label}
+                          mode={kind === entry.value ? 'default' : 'bleed'}
+                          tone={kind === entry.value ? 'primary' : 'default'}
+                          fontSize={1}
+                          padding={2}
+                          onClick={() => setKind(entry.value)}
+                          style={{width: '100%'}}
+                        />
+                      </Box>
+                    ))}
+                  </Flex>
+                </Card>
+              </Field>
+            </Stack>
+          </Section>
 
-            {media.length === 0 && (
-              <EmptyState
-                icon={<ImageIcon />}
-                title={busy === 'upload' ? 'Uploading…' : 'No media yet'}
-                description="Add a picture and “Adjust” moves and zooms it inside the frame this post type will show — with Instagram's safe zones for stories and reels."
-                action={
-                  <Button
-                    text="Add image or video"
-                    icon={AddIcon}
-                    mode="ghost"
-                    disabled={busy === 'upload'}
-                    onClick={() => fileInput.current?.click()}
-                  />
-                }
+          <Section title="Text">
+            <Stack gap={4}>
+              <TemplateBar
+                templateType={templateType}
+                post={value}
+                onCreate={onNewTemplate}
+                onApply={(patch) => {
+                  if (patch.content !== undefined) setContent(patch.content)
+                  if (patch.firstComment !== undefined) setFirstComment(patch.firstComment)
+                }}
               />
-            )}
 
-            {media.length > 0 && (
-              <Flex gap={3} wrap="wrap">
-                {media.map((item, index) => {
-                  const key = item._key ?? String(index)
-                  const video = isVideo(item)
-                  const open = editing === key
+              <Field label="Caption" hint={captionHint}>
+                <TextArea
+                  rows={5}
+                  value={content}
+                  onChange={(event) => setContent(event.currentTarget.value)}
+                  placeholder="What goes out…"
+                />
+              </Field>
 
+              {(kind === 'feed' || kind === 'carousel') && (
+                <Field
+                  label="First comment"
+                  description="Posted right after publishing. Instagram feed and carousel only."
+                >
+                  <TextArea
+                    rows={2}
+                    value={firstComment}
+                    onChange={(event) => setFirstComment(event.currentTarget.value)}
+                    placeholder="All links in the bio"
+                  />
+                </Field>
+              )}
+            </Stack>
+          </Section>
+
+          <Section
+            title="Media"
+            actions={
+              <Button
+                text="Add"
+                icon={AddIcon}
+                mode="ghost"
+                fontSize={1}
+                disabled={busy === 'upload'}
+                onClick={() => fileInput.current?.click()}
+              />
+            }
+          >
+            <Stack gap={3}>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                hidden
+                onChange={(event) => void upload(event.currentTarget.files)}
+              />
+
+              {media.length === 0 && (
+                <Card
+                  as="button"
+                  padding={3}
+                  radius={3}
+                  tone="transparent"
+                  onClick={() => fileInput.current?.click()}
+                  style={{
+                    cursor: 'pointer',
+                    border: '1px dashed var(--card-border-color)',
+                    width: '100%',
+                  }}
+                >
+                  <Flex align="center" gap={3}>
+                    <Text size={2} muted>
+                      <ImageIcon />
+                    </Text>
+                    <Stack gap={2} flex={1} style={{textAlign: 'left'}}>
+                      <Text size={1}>
+                        {busy === 'upload' ? 'Uploading…' : 'Add an image or video'}
+                      </Text>
+                      <Text size={0} muted>
+                        “Adjust” then moves and zooms it inside the frame this post type shows —
+                        with Instagram's safe zones for stories and reels.
+                      </Text>
+                    </Stack>
+                  </Flex>
+                </Card>
+              )}
+
+              {media.length > 0 && (
+                <Flex gap={3} wrap="wrap">
+                  {media.map((item, index) => {
+                    const key = item._key ?? String(index)
+                    const video = isVideo(item)
+                    const open = editing === key
+
+                    return (
+                      <Card
+                        key={key}
+                        radius={2}
+                        border
+                        overflow="hidden"
+                        tone={open ? 'primary' : 'default'}
+                      >
+                        <Box style={{width: 96, height: 96, position: 'relative'}}>
+                          {!video && deliveryUrl(item, kind) ? (
+                            <img
+                              src={deliveryUrl(item, kind)}
+                              alt=""
+                              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                            />
+                          ) : (
+                            <Flex align="center" justify="center" style={{height: '100%'}}>
+                              <Text size={0} muted>
+                                video
+                              </Text>
+                            </Flex>
+                          )}
+                          <Box style={{position: 'absolute', top: 4, left: 4}}>
+                            <Badge fontSize={0}>{index + 1}</Badge>
+                          </Box>
+                        </Box>
+                        <Flex>
+                          <Button
+                            icon={CropIcon}
+                            title={open ? 'Close' : 'Adjust'}
+                            aria-label={open ? 'Close' : 'Adjust'}
+                            mode="bleed"
+                            fontSize={0}
+                            padding={2}
+                            disabled={video}
+                            onClick={() => setEditing(open ? undefined : key)}
+                          />
+                          <Button
+                            icon={TrashIcon}
+                            title="Remove"
+                            aria-label="Remove"
+                            mode="bleed"
+                            tone="critical"
+                            fontSize={0}
+                            padding={2}
+                            onClick={() => {
+                              setEditing(undefined)
+                              setMedia((current) => current.filter((_, i) => i !== index))
+                            }}
+                          />
+                        </Flex>
+                      </Card>
+                    )
+                  })}
+                </Flex>
+              )}
+
+              {editingItem && (
+                <MediaEditor
+                  key={editing}
+                  item={editingItem}
+                  kind={kind}
+                  onChange={(crop) =>
+                    setMedia((current) =>
+                      current.map((entry) =>
+                        (entry._key ?? '') === editing ? {...entry, crop} : entry,
+                      ),
+                    )
+                  }
+                  onClose={() => setEditing(undefined)}
+                />
+              )}
+            </Stack>
+          </Section>
+
+          <Section
+            title="Accounts"
+            description={
+              accountIds.length > 0 ? `${accountIds.length} selected` : 'Where this post goes.'
+            }
+          >
+            {accounts.length === 0 ? (
+              <EmptyState
+                title="No accounts loaded"
+                description="Open Settings, save your API key and press “Reload accounts”."
+              />
+            ) : (
+              <Flex gap={2} wrap="wrap">
+                {accounts.map((account) => {
+                  const checked = accountIds.includes(account.accountId)
                   return (
                     <Card
-                      key={key}
-                      radius={2}
+                      key={account.accountId}
+                      as="button"
+                      padding={2}
+                      radius={4}
                       border
-                      overflow="hidden"
-                      tone={open ? 'primary' : 'default'}
+                      tone={checked ? 'primary' : 'default'}
+                      pressed={checked}
+                      style={{cursor: 'pointer'}}
+                      onClick={() =>
+                        setAccountIds((current) =>
+                          checked
+                            ? current.filter((id) => id !== account.accountId)
+                            : [...current, account.accountId],
+                        )
+                      }
                     >
-                      <Box style={{width: 96, height: 96, position: 'relative'}}>
-                        {!video && deliveryUrl(item, kind) ? (
-                          <img
-                            src={deliveryUrl(item, kind)}
-                            alt=""
-                            style={{width: '100%', height: '100%', objectFit: 'cover'}}
-                          />
-                        ) : (
-                          <Flex align="center" justify="center" style={{height: '100%'}}>
-                            <Text size={0} muted>
-                              video
-                            </Text>
-                          </Flex>
+                      <Flex align="center" gap={2} paddingX={1}>
+                        <PlatformIcon platform={account.platform} size={14} />
+                        <Text size={1}>
+                          {account.name ?? account.username ?? account.accountId}
+                        </Text>
+                        {checked && <Text size={1}>✓</Text>}
+                        {account.disconnected && (
+                          <Badge tone="critical" fontSize={0}>
+                            off
+                          </Badge>
                         )}
-                        <Box style={{position: 'absolute', top: 4, left: 4}}>
-                          <Badge fontSize={0}>{index + 1}</Badge>
-                        </Box>
-                      </Box>
-                      <Flex>
-                        <Button
-                          icon={CropIcon}
-                          title={open ? 'Close' : 'Adjust'}
-                          aria-label={open ? 'Close' : 'Adjust'}
-                          mode="bleed"
-                          fontSize={0}
-                          padding={2}
-                          disabled={video}
-                          onClick={() => setEditing(open ? undefined : key)}
-                        />
-                        <Button
-                          icon={TrashIcon}
-                          title="Remove"
-                          aria-label="Remove"
-                          mode="bleed"
-                          tone="critical"
-                          fontSize={0}
-                          padding={2}
-                          onClick={() => {
-                            setEditing(undefined)
-                            setMedia((current) => current.filter((_, i) => i !== index))
-                          }}
-                        />
                       </Flex>
                     </Card>
                   )
                 })}
               </Flex>
             )}
+          </Section>
+        </Stack>
+      </Box>
 
-            {editingItem && (
-              <MediaEditor
-                key={editing}
-                item={editingItem}
-                kind={kind}
-                onChange={(crop) =>
-                  setMedia((current) =>
-                    current.map((entry) =>
-                      (entry._key ?? '') === editing ? {...entry, crop} : entry,
-                    ),
-                  )
-                }
-                onClose={() => setEditing(undefined)}
-              />
-            )}
-          </Stack>
-        </Section>
-
-        <Section
-          title="Accounts"
-          description={
-            accountIds.length > 0 ? `${accountIds.length} selected` : 'Where this post goes.'
-          }
-        >
-          {accounts.length === 0 ? (
-            <EmptyState
-              title="No accounts loaded"
-              description="Open Settings, save your API key and press “Reload accounts”."
-            />
-          ) : (
-            <Box
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                gap: 8,
-              }}
-            >
-              {accounts.map((account) => {
-                const checked = accountIds.includes(account.accountId)
-                return (
-                  <Card
-                    key={account.accountId}
-                    padding={3}
-                    radius={2}
-                    border
-                    tone={checked ? 'primary' : 'default'}
-                  >
-                    <Flex align="center" gap={3}>
-                      <Checkbox
-                        checked={checked}
-                        onChange={(event) => {
-                          // Read before the updater runs — by then React has
-                          // released the event and `currentTarget` is null.
-                          const {checked: on} = event.currentTarget
-                          setAccountIds((current) =>
-                            on
-                              ? [...current, account.accountId]
-                              : current.filter((id) => id !== account.accountId),
-                          )
-                        }}
-                      />
-                      <PlatformIcon platform={account.platform} size={16} />
-                      <Box flex={1} style={{minWidth: 0}}>
-                        <Text size={1} textOverflow="ellipsis">
-                          {account.name ?? account.username ?? account.accountId}
-                        </Text>
-                      </Box>
-                      {account.disconnected && (
-                        <Badge tone="critical" fontSize={0}>
-                          off
-                        </Badge>
-                      )}
-                    </Flex>
-                  </Card>
-                )
-              })}
-            </Box>
-          )}
-        </Section>
-
-        <Section title="When">
-          <Stack gap={4}>
-            <Flex align="center" gap={3}>
-              <Switch
-                checked={publishNow}
-                onChange={(event) => setPublishNow(event.currentTarget.checked)}
-              />
-              <Text size={1}>Publish immediately</Text>
-            </Flex>
-
-            {!publishNow && (
-              <Field label="Scheduled for" hint={settings.timezone || 'UTC'}>
-                <TextInput
-                  type="datetime-local"
-                  value={when}
-                  onChange={(event) => setWhen(event.currentTarget.value)}
-                />
-              </Field>
-            )}
-          </Stack>
-        </Section>
-      </Stack>
-
-      <Box style={{position: 'sticky', top: 0}}>
+      <Box
+        style={{
+          position: 'sticky',
+          top: 0,
+          maxHeight: 'calc(100vh - 150px)',
+          overflowY: 'auto',
+        }}
+      >
         <Stack gap={3}>
+          <Section title="Preview">
+            <PostPreview value={value} size="large" />
+          </Section>
+
           <Card padding={3} radius={3} border>
             <Stack gap={3}>
+              <Flex align="center" gap={3}>
+                <Switch
+                  checked={publishNow}
+                  onChange={(event) => setPublishNow(event.currentTarget.checked)}
+                />
+                <Text size={1}>Publish immediately</Text>
+              </Flex>
+
+              {!publishNow && (
+                <Field label="Scheduled for" hint={settings.timezone || 'UTC'}>
+                  <TextInput
+                    type="datetime-local"
+                    value={when}
+                    onChange={(event) => setWhen(event.currentTarget.value)}
+                  />
+                </Field>
+              )}
+
               <Button
                 text={publishNow ? 'Publish now' : 'Schedule'}
                 icon={PublishIcon}
@@ -615,6 +605,7 @@ export function Composer(props: {
                 loading={busy === 'send'}
                 onClick={() => void send()}
               />
+
               <Flex gap={2}>
                 <Box flex={1}>
                   <Button
@@ -664,17 +655,13 @@ export function Composer(props: {
               {sent && (
                 <Card padding={3} radius={2} tone="caution" border>
                   <Text size={0}>
-                    Already with Zernio. Editing here changes the document, not what was handed
-                    over — send it again to replace it.
+                    Already with Zernio. Editing here changes the document, not what was handed over
+                    — send it again to replace it.
                   </Text>
                 </Card>
               )}
             </Stack>
           </Card>
-
-          <Section title="Preview">
-            <PostPreview value={value} />
-          </Section>
         </Stack>
       </Box>
     </Box>

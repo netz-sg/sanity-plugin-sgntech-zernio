@@ -1,4 +1,4 @@
-import {Badge, Box, Card, Flex, Inline, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Card, Flex, Stack, Text} from '@sanity/ui'
 
 import {PlatformIcon} from './PlatformIcon'
 
@@ -33,17 +33,15 @@ function Frame(props: {
   kind: PostKind
   platform: string
   value: SocialPostValue
+  width: number
 }): React.JSX.Element {
-  const {kind, platform, value} = props
+  const {kind, platform, value, width} = props
   const geometry = KIND_GEOMETRY[kind]
   const media = usableMedia(value.media)
   const first = media[0]
   const src = deliveryUrl(first, kind)
   const rules = rulesFor(platform, kind)
   const cropped = willBeCropped(first, platform, kind)
-
-  // The frame is scaled down but keeps the real ratio — that is the whole point.
-  const width = kind === 'story' || kind === 'reel' ? 160 : 220
 
   return (
     <Stack gap={3}>
@@ -123,11 +121,31 @@ function Frame(props: {
  *
  * @public
  */
-export function PostPreview(props: {value: SocialPostValue}): React.JSX.Element {
-  const {value} = props
+export function PostPreview(props: {
+  value: SocialPostValue
+  /** `large` is the tool's rail, `compact` the document form. */
+  size?: 'compact' | 'large'
+}): React.JSX.Element {
+  const {value, size = 'compact'} = props
   const platforms = platformsOf(value)
   const issues = validatePost(value)
   const kind = value.kind ?? 'feed'
+  const tall = kind === 'story' || kind === 'reel'
+
+  // The frame keeps the real ratio and takes what the space allows; two
+  // platforms side by side each get less, which is still the honest shape.
+  const width =
+    size === 'compact'
+      ? tall
+        ? 150
+        : 210
+      : platforms.length > 1
+        ? tall
+          ? 170
+          : 220
+        : tall
+          ? 230
+          : 320
 
   return (
     <Stack gap={4}>
@@ -138,11 +156,11 @@ export function PostPreview(props: {value: SocialPostValue}): React.JSX.Element 
           </Text>
         </Card>
       ) : (
-        <Inline gap={5}>
+        <Flex gap={4} wrap="wrap">
           {platforms.map((platform) => (
-            <Frame key={platform} kind={kind} platform={platform} value={value} />
+            <Frame key={platform} kind={kind} platform={platform} value={value} width={width} />
           ))}
-        </Inline>
+        </Flex>
       )}
 
       {issues.length > 0 && (
