@@ -28,6 +28,8 @@ export function createTemplateType(options: TemplateTypeOptions = {}) {
     title,
     type: 'document',
     icon: ZernioIcon,
+    // Managed in the tool; nobody needs to find these through search.
+    __experimental_omnisearch_visibility: false,
     fields: [
       defineField({
         name: 'title',

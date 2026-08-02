@@ -22,7 +22,7 @@
 - **Templates** for caption, first comment and hashtags — one document, three parts, applied together or one at a time. `{{title}}`, `{{date}}`, `{{time}}`, `{{kind}}` and `{{accounts}}` are filled in; unknown placeholders stay visible so it is obvious what is still missing. Available in the composer and in the document form.
 - **Move and zoom the image** in the tool, in the frame the post type will show, and switch Instagram's **safe zones** on to see what the profile row, the reply bar or the reel buttons will cover. The crop is stored in Sanity's own `crop` shape, so the image field's crop tool and this one edit the same thing.
 - **Posts are documents.** Every post is still a `socialPost` in your dataset, so it gets version history, roles, review — and a reference to the article or release it belongs to. That is the reason to do this in Sanity rather than in a separate dashboard.
-- **A cockpit tool**: composer, month and week calendar with drag-and-drop rescheduling, a filtered post list, and a settings panel.
+- **A cockpit tool**: composer, month and week calendar with drag-and-drop rescheduling, a filtered post list, template management, and a settings panel. Writing, editing, scheduling, sending and deleting all happen here — nothing sends you to the desk.
 - **Previews in the real geometry** per post type — 4:5 for feed and carousel, 9:16 for story and reel — with the caption folded where the platform folds it, at 125 characters on Instagram and 480 on Facebook. The same preview sits in the composer and in the document form, and both update while you type.
 - **Validation while writing**, per platform and post type: media count, file size, aspect ratio, caption length. What the API would reject is an error; what the platform would crop or hide is a warning.
 - **Media without uploads.** Images are handed over as Sanity CDN URLs, cropped by the image pipeline to what the post type expects. Nothing is copied, nothing is uploaded twice.
@@ -117,11 +117,17 @@ zernio({
 Media added here is uploaded to Sanity's asset store first, so it ends up in your media library like
 any other image — the tool never sends a file to Zernio, only a URL.
 
+Clicking a post in the calendar or the list opens it in the composer again: change it, save it,
+send it, delete it. **Save** only touches the fields the composer owns, so anything a project added
+to the post type stays untouched.
+
 ### Through the document, when a post needs review
 
-1. **Save as draft and open** in the composer, or create a `socialPost` in the desk.
-2. Write it, have it reviewed, **publish the document**. The plugin sends the published version, never the draft — what goes out has to be what was reviewed.
-3. Hit **Send to Zernio**, either from the document menu or from the list in the tool.
+The document form is still a full editor, with the same preview and template picker, for teams that
+want posts to go through review before they are sent.
+
+1. Create a `socialPost` in the desk, write it, have it reviewed, **publish the document**. The plugin sends the published version, never the draft — what goes out has to be what was reviewed.
+2. Hit **Send to Zernio**, from the document menu or from the list in the tool.
 
 Either way Zernio schedules or publishes it, the document keeps the Zernio post id, and while the
 tool is open the status is refreshed every 30 seconds until it settles — every published post gets a
@@ -131,9 +137,35 @@ Nothing is polled while the tool is closed — the status then updates the next 
 it. Webhooks would be the alternative, and they need a server; this plugin deliberately does not
 require one.
 
+## Keeping the types out of the desk
+
+The plugin's document types are already gone from the global create menu. To hide them from the
+desk structure as well — everything about them is done in the tool — filter them out:
+
+```ts
+import {structureTool} from 'sanity/structure'
+import {zernio, zernioTypeNames} from 'sanity-plugin-sgntech-zernio'
+
+const zernioConfig = {timezone: 'Europe/Berlin'}
+const hidden = zernioTypeNames(zernioConfig)
+
+export default defineConfig({
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title('Content')
+          .items(S.documentTypeListItems().filter((item) => !hidden.includes(item.getId() ?? ''))),
+    }),
+    zernio(zernioConfig),
+  ],
+})
+```
+
 ## Templates
 
-A template is a document of its own:
+Templates are written in the tool's **Templates** tab — name, caption, first comment, hashtags and
+where the hashtags go. Behind it is an ordinary document:
 
 ```json
 {

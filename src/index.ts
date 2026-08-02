@@ -11,6 +11,32 @@ import {
 import {createTemplateType} from './schema/template'
 
 /**
+ * The document types this plugin registers, for a Studio that wants to keep
+ * them out of its desk structure — everything about them is done in the tool.
+ *
+ * ```ts
+ * structureTool({
+ *   structure: (S) =>
+ *     S.list().title('Content').items(
+ *       S.documentTypeListItems().filter(
+ *         (item) => !zernioTypeNames().includes(item.getId() ?? ''),
+ *       ),
+ *     ),
+ * })
+ * ```
+ *
+ * @public
+ */
+export function zernioTypeNames(config: ZernioConfig | void = {}): string[] {
+  const options = config || {}
+  return [
+    options.name ?? 'socialPost',
+    options.templateType ?? 'zernioTemplate',
+    'zernio.settings',
+  ]
+}
+
+/**
  * Configuration for {@link zernio}.
  *
  * @public
@@ -51,6 +77,7 @@ export const zernio = definePlugin<ZernioConfig | void>((config) => {
   const options = config || {}
   const documentType = options.name ?? 'socialPost'
   const templateType = options.templateType ?? 'zernioTemplate'
+  const hidden = zernioTypeNames(options)
 
   return {
     name: 'sanity-plugin-sgntech-zernio',
@@ -74,6 +101,11 @@ export const zernio = definePlugin<ZernioConfig | void>((config) => {
     ],
 
     document: {
+      // Everything about these types happens in the tool, so they are kept out
+      // of the global create menu.
+      newDocumentOptions: (previous) =>
+        previous.filter((item) => !hidden.includes(item.templateId ?? '')),
+
       actions: (previous, context) => {
         if (options.documentAction === false) return previous
         if (context.schemaType !== documentType) return previous
@@ -90,6 +122,7 @@ export {
 } from './schema/socialPost'
 export {ZernioTool, type ZernioToolProps} from './components/ZernioTool'
 export {MediaEditor} from './components/MediaEditor'
+export {TemplatePanel} from './components/TemplatePanel'
 export {TemplateBar} from './components/TemplateBar'
 export {createTemplateInput, TemplateInput} from './components/TemplateInput'
 export {createTemplateType, type TemplateTypeOptions} from './schema/template'

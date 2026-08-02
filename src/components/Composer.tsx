@@ -18,7 +18,7 @@ import {useZernioClient, useZernioSettings} from '../hooks/useZernio'
 import {deliveryUrl, isVideo} from '../lib/media'
 import {canSend} from '../lib/rules'
 import {sendPost} from '../lib/send'
-import type {PostKind, SocialMediaItem, SocialPostValue} from '../lib/types'
+import type {PostKind, PostStatus, SocialMediaItem, SocialPostValue} from '../lib/types'
 import {MediaEditor} from './MediaEditor'
 import {PlatformIcon} from './PlatformIcon'
 import {PostPreview} from './PostPreview'
@@ -27,49 +27,86 @@ import {TemplateBar} from './TemplateBar'
 const API_VERSION = '2024-10-01'
 const KINDS: PostKind[] = ['feed', 'carousel', 'story', 'reel']
 
+/** The fields the composer owns. Everything else on the document is left alone. */
+const OWNED = [
+  'title',
+  'kind',
+  'content',
+  'firstComment',
+  'media',
+  'targets',
+  'publishNow',
+  'scheduledFor',
+  'timezone',
+] as const
+
 /** `YYYY-MM-DDTHH:mm` for the datetime input, in local time. */
 function toLocalInput(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+function startTime(post: SocialPostValue | undefined, initialDay: string | undefined): string {
+  const raw = (post?.scheduledFor ?? '').trim()
+  if (raw) {
+    const parsed = new Date(raw)
+    if (!Number.isNaN(parsed.getTime())) return toLocalInput(parsed)
+  }
+  return toLocalInput(initialDay ? new Date(`${initialDay}T12:00:00`) : new Date(Date.now() + 3600_000))
+}
+
 /**
- * Write a post and send it without leaving the tool.
+ * Write, edit and publish a post without leaving the tool.
  *
- * The document is still created — that is what keeps history, roles and the
- * status write-back working — but nobody has to walk through the document
- * editor to publish something.
+ * The document is still written — that is what keeps history, roles and the
+ * status write-back working — but nothing here sends anyone to the desk.
  *
  * @public
  */
 export function Composer(props: {
   documentType: string
   templateType: string
+  /** The post being edited, or nothing for a new one. */
+  post?: SocialPostValue
   initialDay?: string
   onSent: () => void
-  onOpenDocument: (id: string) => void
+  onChanged: () => void
+  onDeleted?: () => void
+  onNewTemplate?: () => void
 }): React.JSX.Element {
-  const {documentType, templateType, initialDay, onSent, onOpenDocument} = props
+  const {
+    documentType,
+    templateType,
+    post,
+    initialDay,
+    onSent,
+    onChanged,
+    onDeleted,
+    onNewTemplate,
+  } = props
   const client = useClient({apiVersion: API_VERSION})
   const {settings} = useZernioSettings()
   const zernio = useZernioClient(settings.apiKey)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  const [title, setTitle] = useState('')
-  const [kind, setKind] = useState<PostKind>('feed')
-  const [content, setContent] = useState('')
-  const [firstComment, setFirstComment] = useState('')
-  const [media, setMedia] = useState<SocialMediaItem[]>([])
-  const [accountIds, setAccountIds] = useState<string[]>([])
-  const [publishNow, setPublishNow] = useState(false)
-  const [when, setWhen] = useState(() => {
-    const base = initialDay ? new Date(`${initialDay}T12:00:00`) : new Date(Date.now() + 3600_000)
-    return toLocalInput(base)
-  })
+  const [postId, setPostId] = useState(post?._id)
+  const [title, setTitle] = useState(post?.title ?? '')
+  const [kind, setKind] = useState<PostKind>(post?.kind ?? 'feed')
+  const [content, setContent] = useState(post?.content ?? '')
+  const [firstComment, setFirstComment] = useState(post?.firstComment ?? '')
+  const [media, setMedia] = useState<SocialMediaItem[]>(post?.media ?? [])
+  const [accountIds, setAccountIds] = useState<string[]>(
+    (post?.targets ?? []).map((target) => target.accountId ?? '').filter(Boolean),
+  )
+  const [publishNow, setPublishNow] = useState(post?.publishNow ?? false)
+  const [when, setWhen] = useState(() => startTime(post, initialDay))
   const [editing, setEditing] = useState<string | undefined>()
   const [busy, setBusy] = useState<string | undefined>()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [note, setNote] = useState<{tone: 'positive' | 'critical'; text: string} | undefined>()
 
+  const status: PostStatus = post?.status ?? 'draft'
+  const sent = Boolean(post?.zernioPostId)
   const editingItem = media.find((item) => (item._key ?? '') === editing)
 
   const accounts = useMemo(
@@ -82,6 +119,7 @@ export function Composer(props: {
 
   const value: SocialPostValue = useMemo(
     () => ({
+      _id: postId,
       title: title.trim() || 'Untitled',
       kind,
       content,
@@ -101,6 +139,8 @@ export function Composer(props: {
           label: account?.name ?? account?.username ?? id,
         }
       }),
+      status,
+      zernioPostId: post?.zernioPostId,
     }),
     [
       accountIds,
@@ -109,12 +149,91 @@ export function Composer(props: {
       firstComment,
       kind,
       media,
+      post?.zernioPostId,
+      postId,
       publishNow,
       settings.timezone,
+      status,
       title,
       when,
     ],
   )
+
+  /** Writes the post and returns its id, creating the document the first time. */
+  const store = useCallback(
+    async (nextStatus: PostStatus) => {
+      const fields = Object.fromEntries(OWNED.map((field) => [field, value[field] ?? null]))
+
+      if (postId) {
+        // Only the fields the composer owns are touched — results, the Zernio id
+        // and anything a project added to the type stay as they are.
+        await client
+          .patch(postId)
+          .set({...fields, status: nextStatus})
+          .commit({visibility: 'async'})
+        return postId
+      }
+
+      const created = await client.create({_type: documentType, ...value, status: nextStatus})
+      setPostId(created._id)
+      return created._id
+    },
+    [client, documentType, postId, value],
+  )
+
+  const save = useCallback(async () => {
+    setBusy('save')
+    setNote(undefined)
+
+    try {
+      await store(sent ? status : 'draft')
+      setNote({tone: 'positive', text: 'Saved'})
+      onChanged()
+    } catch (error) {
+      setNote({tone: 'critical', text: error instanceof Error ? error.message : 'Could not save'})
+    } finally {
+      setBusy(undefined)
+    }
+  }, [onChanged, sent, status, store])
+
+  const send = useCallback(async () => {
+    if (!zernio) {
+      setNote({tone: 'critical', text: 'No API key stored — see Settings.'})
+      return
+    }
+
+    setBusy('send')
+    setNote(undefined)
+
+    try {
+      const id = await store('ready')
+      const outcome = await sendPost(client, zernio, {...value, _id: id})
+
+      setNote({tone: outcome.ok ? 'positive' : 'critical', text: outcome.message})
+      if (outcome.ok) onSent()
+    } catch (error) {
+      setNote({tone: 'critical', text: error instanceof Error ? error.message : 'Unknown error'})
+    } finally {
+      setBusy(undefined)
+    }
+  }, [client, onSent, store, value, zernio])
+
+  const remove = useCallback(async () => {
+    if (!postId) return
+    setBusy('delete')
+
+    try {
+      // The draft goes too, otherwise the post reappears the next time anyone
+      // opens it in the desk.
+      await client.delete(postId)
+      await client.delete(`drafts.${postId.replace(/^drafts\./, '')}`).catch(() => undefined)
+      onDeleted?.()
+    } catch (error) {
+      setNote({tone: 'critical', text: error instanceof Error ? error.message : 'Could not delete'})
+    } finally {
+      setBusy(undefined)
+    }
+  }, [client, onDeleted, postId])
 
   const upload = useCallback(
     async (files: FileList | null) => {
@@ -125,14 +244,14 @@ export function Composer(props: {
       try {
         const uploaded = await Promise.all(
           Array.from(files).map(async (file) => {
-            const isVideo = file.type.startsWith('video/')
-            const asset = await client.assets.upload(isVideo ? 'file' : 'image', file, {
+            const video = file.type.startsWith('video/')
+            const asset = await client.assets.upload(video ? 'file' : 'image', file, {
               filename: file.name,
             })
 
             return {
               _key: asset._id,
-              _type: isVideo ? 'video' : 'photo',
+              _type: video ? 'video' : 'photo',
               asset: {
                 _id: asset._id,
                 url: asset.url,
@@ -157,52 +276,17 @@ export function Composer(props: {
     [client],
   )
 
-  const send = useCallback(async () => {
-    if (!zernio) {
-      setNote({tone: 'critical', text: 'No API key stored — see Settings.'})
-      return
-    }
-
-    setBusy('send')
-    setNote(undefined)
-
-    try {
-      // The document is created published, not as a draft: it is the record of
-      // something that is about to go out, and the send reads the published one.
-      const created = await client.create({_type: documentType, ...value, status: 'ready'})
-      const outcome = await sendPost(client, zernio, {...value, _id: created._id})
-
-      setNote({tone: outcome.ok ? 'positive' : 'critical', text: outcome.message})
-
-      if (outcome.ok) {
-        // Cleared so the next post starts empty — the caption and the media are
-        // the parts nobody wants to delete by hand.
-        setTitle('')
-        setContent('')
-        setFirstComment('')
-        setMedia([])
-        onSent()
-      }
-    } catch (error) {
-      setNote({tone: 'critical', text: error instanceof Error ? error.message : 'Unknown error'})
-    } finally {
-      setBusy(undefined)
-    }
-  }, [client, documentType, onSent, value, zernio])
-
-  const saveDraft = async () => {
-    setBusy('draft')
-    try {
-      const created = await client.create({_type: documentType, ...value, status: 'draft'})
-      onOpenDocument(created._id)
-    } finally {
-      setBusy(undefined)
-    }
-  }
-
   return (
     <Box style={{display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 24}}>
       <Stack gap={4}>
+        <Flex align="center" gap={2}>
+          <Text size={1} weight="medium">
+            {postId ? 'Editing a post' : 'New post'}
+          </Text>
+          {postId && <Badge tone={sent ? 'positive' : 'default'}>{status}</Badge>}
+          {sent && <Badge tone="primary">in Zernio</Badge>}
+        </Flex>
+
         <Stack gap={2}>
           <Text size={1} weight="medium">
             Internal name
@@ -234,6 +318,7 @@ export function Composer(props: {
         <TemplateBar
           templateType={templateType}
           post={value}
+          onCreate={onNewTemplate}
           onApply={(patch) => {
             if (patch.content !== undefined) setContent(patch.content)
             if (patch.firstComment !== undefined) setFirstComment(patch.firstComment)
@@ -351,9 +436,7 @@ export function Composer(props: {
               kind={kind}
               onChange={(crop) =>
                 setMedia((current) =>
-                  current.map((entry) =>
-                    (entry._key ?? '') === editing ? {...entry, crop} : entry,
-                  ),
+                  current.map((entry) => ((entry._key ?? '') === editing ? {...entry, crop} : entry)),
                 )
               }
               onClose={() => setEditing(undefined)}
@@ -435,7 +518,16 @@ export function Composer(props: {
           </Card>
         )}
 
-        <Flex gap={2}>
+        {sent && (
+          <Card padding={3} radius={2} border tone="caution">
+            <Text size={1}>
+              This post is already with Zernio. Editing it here changes the document, not what was
+              handed over — send it again to replace it.
+            </Text>
+          </Card>
+        )}
+
+        <Flex gap={2} wrap="wrap">
           <Button
             text={publishNow ? 'Publish now' : 'Schedule'}
             tone="primary"
@@ -443,11 +535,38 @@ export function Composer(props: {
             onClick={() => void send()}
           />
           <Button
-            text="Save as draft and open"
+            text={postId ? 'Save' : 'Save as draft'}
             mode="ghost"
-            disabled={busy === 'draft'}
-            onClick={() => void saveDraft()}
+            disabled={busy === 'save'}
+            onClick={() => void save()}
           />
+          <Box flex={1} />
+          {postId &&
+            (confirmDelete ? (
+              <Flex gap={2}>
+                <Button
+                  text="Really delete"
+                  tone="critical"
+                  fontSize={1}
+                  disabled={busy === 'delete'}
+                  onClick={() => void remove()}
+                />
+                <Button
+                  text="Keep"
+                  mode="bleed"
+                  fontSize={1}
+                  onClick={() => setConfirmDelete(false)}
+                />
+              </Flex>
+            ) : (
+              <Button
+                text="Delete"
+                mode="bleed"
+                tone="critical"
+                fontSize={1}
+                onClick={() => setConfirmDelete(true)}
+              />
+            ))}
         </Flex>
       </Stack>
 

@@ -25,8 +25,10 @@ export function TemplateBar(props: {
   templateType: string
   post: SocialPostValue
   onApply: (patch: Partial<SocialPostValue>) => void
+  /** Where "New template" goes. Without it the template opens in the desk. */
+  onCreate?: () => void
 }): React.JSX.Element | null {
-  const {templateType, post, onApply} = props
+  const {templateType, post, onApply, onCreate} = props
   const {templates, loading} = useTemplates(templateType)
   const client = useClient({apiVersion: '2024-10-01'})
   const router = useRouter()
@@ -40,6 +42,11 @@ export function TemplateBar(props: {
   }
 
   const createTemplate = () => {
+    if (onCreate) {
+      onCreate()
+      return
+    }
+
     void client
       .create({_type: templateType, title: 'New template'})
       .then((created) => {

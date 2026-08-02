@@ -13,7 +13,6 @@ import {
   Text,
 } from '@sanity/ui'
 import {useCallback, useState} from 'react'
-import {useRouter} from 'sanity/router'
 
 import {usePosts} from '../hooks/usePosts'
 import {useRemotePosts} from '../hooks/useRemotePosts'
@@ -23,6 +22,7 @@ import {CalendarView} from './CalendarView'
 import {Composer} from './Composer'
 import {PostList} from './PostList'
 import {SettingsPanel} from './SettingsPanel'
+import {TemplatePanel} from './TemplatePanel'
 
 /**
  * Props the plugin hands to the tool.
@@ -42,10 +42,11 @@ export interface ZernioToolProps {
 export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Element {
   const documentType = props.options?.documentType ?? 'socialPost'
   const templateType = props.options?.templateType ?? 'zernioTemplate'
-  const router = useRouter()
-
-  const [tab, setTab] = useState<'compose' | 'calendar' | 'posts' | 'settings'>('compose')
+  const [tab, setTab] = useState<'compose' | 'calendar' | 'posts' | 'templates' | 'settings'>(
+    'compose',
+  )
   const [composeDay, setComposeDay] = useState<string | undefined>()
+  const [editingPost, setEditingPost] = useState<SocialPostValue | undefined>()
   // Bumped to start the composer over — its fields are local state.
   const [composeKey, setComposeKey] = useState(0)
   const [generation, setGeneration] = useState(0)
@@ -58,27 +59,21 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
     setGeneration((current) => current + 1)
   }, [reload])
 
-  /** Opens the composer, on a day when the calendar asked for one. */
+  /** Opens the composer empty, on a day when the calendar asked for one. */
   const create = useCallback((dayKey?: string) => {
+    setEditingPost(undefined)
     setComposeDay(dayKey)
     setComposeKey((current) => current + 1)
     setTab('compose')
   }, [])
 
-  const openDocument = useCallback(
-    (id: string) => {
-      // Same route the desk uses, so the post opens in the normal editor.
-      router.navigateIntent('edit', {id, type: documentType})
-    },
-    [documentType, router],
-  )
-
-  const open = useCallback(
-    (post: SocialPostValue) => {
-      if (post._id) openDocument(post._id)
-    },
-    [openDocument],
-  )
+  /** Opens a post in the composer — everything happens in this tool. */
+  const open = useCallback((post: SocialPostValue) => {
+    setEditingPost(post)
+    setComposeDay(undefined)
+    setComposeKey((current) => current + 1)
+    setTab('compose')
+  }, [])
 
   const configured = Boolean(settings.apiKey)
 
@@ -134,6 +129,13 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
             onClick={() => setTab('posts')}
           />
           <Tab
+            id="templates-tab"
+            aria-controls="templates-panel"
+            label="Templates"
+            selected={tab === 'templates'}
+            onClick={() => setTab('templates')}
+          />
+          <Tab
             id="settings-tab"
             aria-controls="settings-panel"
             label="Settings"
@@ -147,9 +149,15 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
             key={composeKey}
             documentType={documentType}
             templateType={templateType}
+            post={editingPost}
             initialDay={composeDay}
             onSent={refresh}
-            onOpenDocument={openDocument}
+            onChanged={refresh}
+            onDeleted={() => {
+              refresh()
+              create()
+            }}
+            onNewTemplate={() => setTab('templates')}
           />
         </TabPanel>
 
@@ -165,6 +173,10 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
 
         <TabPanel id="posts-panel" aria-labelledby="posts-tab" hidden={tab !== 'posts'}>
           <PostList posts={posts} remote={remote} onOpen={open} onChanged={refresh} />
+        </TabPanel>
+
+        <TabPanel id="templates-panel" aria-labelledby="templates-tab" hidden={tab !== 'templates'}>
+          <TemplatePanel templateType={templateType} />
         </TabPanel>
 
         <TabPanel id="settings-panel" aria-labelledby="settings-tab" hidden={tab !== 'settings'}>
