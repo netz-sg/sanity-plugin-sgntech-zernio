@@ -289,6 +289,13 @@ export function Composer(props: {
             onChange={(event) => void upload(event.currentTarget.files)}
           />
 
+          {media.length === 0 && (
+            <Text size={0} muted>
+              Add an image and “Adjust” lets you move and zoom it inside the frame the post type
+              will show — with Instagram's safe zones for stories and reels.
+            </Text>
+          )}
+
           {media.length > 0 && (
             <Flex gap={2} wrap="wrap">
               {media.map((item, index) => {

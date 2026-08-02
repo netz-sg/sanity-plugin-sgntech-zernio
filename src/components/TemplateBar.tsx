@@ -1,5 +1,7 @@
 import {Box, Button, Card, Flex, Select, Stack, Text} from '@sanity/ui'
 import {useState} from 'react'
+import {useClient} from 'sanity'
+import {useRouter} from 'sanity/router'
 
 import {useTemplates} from '../hooks/useTemplates'
 import {
@@ -26,6 +28,8 @@ export function TemplateBar(props: {
 }): React.JSX.Element | null {
   const {templateType, post, onApply} = props
   const {templates, loading} = useTemplates(templateType)
+  const client = useClient({apiVersion: '2024-10-01'})
+  const router = useRouter()
   const [selected, setSelected] = useState('')
 
   const template: TemplateValue | undefined = templates.find((entry) => entry._id === selected)
@@ -35,7 +39,17 @@ export function TemplateBar(props: {
     if (Object.keys(patch).length > 0) onApply(patch)
   }
 
-  if (loading || templates.length === 0) return null
+  const createTemplate = () => {
+    void client
+      .create({_type: templateType, title: 'New template'})
+      .then((created) => {
+        router.navigateIntent('edit', {id: created._id, type: templateType})
+        return undefined
+      })
+      .catch(() => undefined)
+  }
+
+  if (loading) return null
 
   const hasHashtags = (template?.hashtags ?? []).length > 0
   const parts: TemplatePart[] = ['caption', 'firstComment', 'hashtags']
@@ -48,8 +62,12 @@ export function TemplateBar(props: {
             Template
           </Text>
           <Box flex={1} style={{minWidth: 160}}>
-            <Select value={selected} onChange={(event) => setSelected(event.currentTarget.value)}>
-              <option value="">Pick one…</option>
+            <Select
+              value={selected}
+              disabled={templates.length === 0}
+              onChange={(event) => setSelected(event.currentTarget.value)}
+            >
+              <option value="">{templates.length === 0 ? 'None yet' : 'Pick one…'}</option>
               {templates.map((entry) => (
                 <option key={entry._id} value={entry._id}>
                   {entry.title ?? 'Untitled'}
@@ -57,7 +75,15 @@ export function TemplateBar(props: {
               ))}
             </Select>
           </Box>
+          <Button text="New template" mode="ghost" fontSize={1} onClick={createTemplate} />
         </Flex>
+
+        {templates.length === 0 && (
+          <Text size={0} muted>
+            A template holds a caption, a first comment and a hashtag set, with {'{{title}}'}-style
+            placeholders filled in when it is applied.
+          </Text>
+        )}
 
         {template && (
           <Flex gap={2} wrap="wrap">
