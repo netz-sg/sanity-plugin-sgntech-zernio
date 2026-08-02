@@ -6,12 +6,11 @@ import type {PostKind, SocialPostValue} from '../lib/types'
 import {PlatformFrame} from './PlatformFrame'
 import {PlatformIcon} from './PlatformIcon'
 
-/** How wide one frame is drawn, per size and per how many are shown. */
-function frameWidth(size: 'compact' | 'large', kind: PostKind, count: number): number {
+/** How wide one frame is drawn. Frames are stacked, so the count changes nothing. */
+function frameWidth(size: 'compact' | 'large', kind: PostKind): number {
   const tall = kind === 'story' || kind === 'reel'
   if (size === 'compact') return tall ? 150 : 200
-  if (count > 1) return tall ? 170 : 230
-  return tall ? 250 : 330
+  return tall ? 290 : 360
 }
 
 /**
@@ -36,7 +35,7 @@ export function PostPreview(props: {
   const issues = validatePost(value)
   const kind = value.kind ?? 'feed'
   const geometry = KIND_GEOMETRY[kind]
-  const width = frameWidth(size, kind, platforms.length)
+  const width = frameWidth(size, kind)
   const first = usableMedia(value.media)[0]
 
   return (
@@ -48,7 +47,7 @@ export function PostPreview(props: {
           </Text>
         </Card>
       ) : (
-        <Flex gap={4} wrap="wrap">
+        <Stack gap={5}>
           {platforms.map((platform) => (
             <Stack key={platform} gap={3}>
               <Flex align="center" gap={2}>
@@ -68,7 +67,7 @@ export function PostPreview(props: {
               </Box>
             </Stack>
           ))}
-        </Flex>
+        </Stack>
       )}
 
       {showIssues && issues.length > 0 && (
