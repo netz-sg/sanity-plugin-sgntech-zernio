@@ -138,6 +138,8 @@ export {
 } from './lib/templates'
 export {Composer} from './components/Composer'
 export {PostPreview} from './components/PostPreview'
+export {PlatformFrame, type PlatformFrameProps} from './components/PlatformFrame'
+export {PostDetail} from './components/PostDetail'
 export {PostPreviewInput} from './components/PostPreviewInput'
 export {PlatformIcon} from './components/PlatformIcon'
 export {RemotePostGrid} from './components/RemotePostGrid'

@@ -23,7 +23,7 @@
 - **Move and zoom the image** in the tool, in the frame the post type will show, and switch Instagram's **safe zones** on to see what the profile row, the reply bar or the reel buttons will cover. The crop is stored in Sanity's own `crop` shape, so the image field's crop tool and this one edit the same thing.
 - **Posts are documents.** Every post is still a `socialPost` in your dataset, so it gets version history, roles, review — and a reference to the article or release it belongs to. That is the reason to do this in Sanity rather than in a separate dashboard.
 - **A cockpit tool**: composer, month and week calendar with drag-and-drop rescheduling, a filtered post list, template management, and a settings panel. Writing, editing, scheduling, sending and deleting all happen here — nothing sends you to the desk.
-- **Previews in the real geometry** per post type — 4:5 for feed and carousel, 9:16 for story and reel — with the caption folded where the platform folds it, at 125 characters on Instagram and 480 on Facebook. The same preview sits in the composer and in the document form, and both update while you type.
+- **Previews that look like the app** — the Instagram feed card with its profile row and action bar, the story with its progress bars and reply field, the reel with its side rail, the Facebook post with its Like/Comment/Share row. Right geometry per post type (4:5 for feed and carousel, 9:16 for story and reel) and the caption folded where the platform folds it: 125 characters on Instagram, 480 on Facebook.
 - **Validation while writing**, per platform and post type: media count, file size, aspect ratio, caption length. What the API would reject is an error; what the platform would crop or hide is a warning.
 - **Media without uploads.** Images are handed over as Sanity CDN URLs, cropped by the image pipeline to what the post type expects. Nothing is copied, nothing is uploaded twice.
 - **Everything Zernio knows, not just your own work.** The calendar shows posts written in Zernio's dashboard or by another tool, and the list shows them as cards with their image, platform icons and a link to the published post — otherwise a calendar looks complete while hiding half the schedule.
@@ -171,9 +171,10 @@ If your dataset already has a `socialPost` type, give this one another name — 
 
 | Tab | What it is for |
 | --- | --- |
-| **Compose** | Write a new post or edit an existing one, with the live preview and the send buttons next to it. |
+| **Compose** | Write a new post or edit an existing one on a single screen that never scrolls: the caption grows into the space that is left, the preview stands next to it, and scheduling and sending sit in the bar at the bottom. |
 | **Calendar** | Month and week view of everything scheduled — yours and what already lives in Zernio. Drag a post to another day, or press **+** on a day to compose for it. |
 | **Posts** | Every post in this Studio, filterable by status and account, with thumbnails and links to what has been published. Below it, the posts that exist only in Zernio. |
+| **Post detail** | Opened from the calendar or the list: caption, media, accounts, schedule, what Zernio reported per platform, and the actions — edit, duplicate, check status, send, delete. |
 | **Templates** | Reusable captions, first comments and hashtag sets. |
 | **Settings** | API key, profile, connected accounts, default timezone. |
 
