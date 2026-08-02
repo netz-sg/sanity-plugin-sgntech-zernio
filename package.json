@@ -1,6 +1,6 @@
 {
   "name": "sanity-plugin-sgntech-zernio",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Plan, preview and publish Instagram and Facebook posts from inside Sanity Studio, through the Zernio API — calendar, previews and per-type validation included.",
   "keywords": [
     "facebook",

@@ -1,3 +1,6 @@
+import {AddIcon} from '@sanity/icons/Add'
+import {ChevronLeftIcon} from '@sanity/icons/ChevronLeft'
+import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {Badge, Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
 import {useCallback, useMemo, useState} from 'react'
 import {useClient} from 'sanity'
@@ -13,19 +16,11 @@ import {
   weekGrid,
 } from '../lib/calendar'
 import type {RemotePost, SocialPostValue} from '../lib/types'
+import {PlatformIcon} from './PlatformIcon'
+import {STATUS_TONE, Toolbar} from './ui'
 
 const API_VERSION = '2024-10-01'
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-const STATUS_TONE: Record<string, 'default' | 'primary' | 'positive' | 'caution' | 'critical'> = {
-  draft: 'default',
-  ready: 'primary',
-  scheduled: 'primary',
-  publishing: 'caution',
-  published: 'positive',
-  partial: 'caution',
-  failed: 'critical',
-}
 
 function monthLabel(year: number, month: number): string {
   return new Date(year, month, 1).toLocaleDateString(undefined, {month: 'long', year: 'numeric'})
@@ -97,42 +92,56 @@ export function CalendarView(props: {
 
   return (
     <Stack gap={4}>
-      <Flex align="center" gap={2} wrap="wrap">
-        <Button text="←" mode="ghost" onClick={() => step(-1)} aria-label="Previous" />
-        <Button text="→" mode="ghost" onClick={() => step(1)} aria-label="Next" />
+      <Toolbar>
+        <Button
+          icon={ChevronLeftIcon}
+          mode="bleed"
+          onClick={() => step(-1)}
+          aria-label="Previous"
+        />
+        <Button icon={ChevronRightIcon} mode="bleed" onClick={() => step(1)} aria-label="Next" />
         <Button
           text="Today"
-          mode="ghost"
+          mode="bleed"
+          fontSize={1}
           onClick={() =>
             setCursor(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
           }
         />
-        <Box flex={1}>
-          <Text weight="medium">
+        <Box flex={1} paddingX={2}>
+          <Text weight="semibold">
             {mode === 'month'
               ? monthLabel(cursor.getFullYear(), cursor.getMonth())
               : `Week of ${days[0]?.key ?? ''}`}
           </Text>
         </Box>
-        <Button
-          text="Month"
-          mode={mode === 'month' ? 'default' : 'ghost'}
-          tone={mode === 'month' ? 'primary' : 'default'}
-          onClick={() => setMode('month')}
-        />
-        <Button
-          text="Week"
-          mode={mode === 'week' ? 'default' : 'ghost'}
-          tone={mode === 'week' ? 'primary' : 'default'}
-          onClick={() => setMode('week')}
-        />
-      </Flex>
+        <Card padding={1} radius={2} tone="transparent" border>
+          <Flex gap={1}>
+            <Button
+              text="Month"
+              mode={mode === 'month' ? 'default' : 'bleed'}
+              tone={mode === 'month' ? 'primary' : 'default'}
+              fontSize={1}
+              padding={2}
+              onClick={() => setMode('month')}
+            />
+            <Button
+              text="Week"
+              mode={mode === 'week' ? 'default' : 'bleed'}
+              tone={mode === 'week' ? 'primary' : 'default'}
+              fontSize={1}
+              padding={2}
+              onClick={() => setMode('week')}
+            />
+          </Flex>
+        </Card>
+      </Toolbar>
 
-      <Box style={{display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 4}}>
+      <Box style={{display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6}}>
         {WEEKDAYS.map((weekday) => (
-          <Box key={weekday} padding={2}>
-            <Text size={0} muted weight="medium">
-              {weekday}
+          <Box key={weekday} paddingX={2} paddingY={1}>
+            <Text size={0} muted weight="semibold" style={{letterSpacing: '.06em'}}>
+              {weekday.toUpperCase()}
             </Text>
           </Box>
         ))}
@@ -145,25 +154,33 @@ export function CalendarView(props: {
             <Card
               key={day.key}
               padding={2}
-              radius={2}
+              radius={3}
               border
-              tone={day.isToday ? 'primary' : day.inMonth ? 'default' : 'transparent'}
-              style={{minHeight: mode === 'month' ? 96 : 220}}
+              tone={day.inMonth ? 'default' : 'transparent'}
+              style={{
+                minHeight: mode === 'month' ? 104 : 240,
+                outline: day.isToday ? '1px solid var(--card-focus-ring-color)' : undefined,
+              }}
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => void drop(day.key)}
             >
               <Stack gap={2}>
                 <Flex align="center" gap={1}>
-                  <Text size={0} muted={!day.inMonth}>
+                  <Text
+                    size={0}
+                    muted={!day.inMonth}
+                    weight={day.isToday ? 'semibold' : 'regular'}
+                  >
                     {day.date.getDate()}
                   </Text>
                   <Box flex={1} />
                   {onCreate && (
                     <Button
-                      text="+"
+                      icon={AddIcon}
                       mode="bleed"
                       padding={1}
                       fontSize={0}
+                      title={`New post on ${day.key}`}
                       aria-label={`New post on ${day.key}`}
                       onClick={() => onCreate(day.key)}
                     />
@@ -182,12 +199,21 @@ export function CalendarView(props: {
                     onClick={() => onOpen(post)}
                     style={{cursor: 'pointer'}}
                   >
-                    <Stack gap={1}>
-                      <Text size={0} weight="medium" textOverflow="ellipsis">
-                        {timeLabel(post)} {post.title}
-                      </Text>
-                      <Text size={0} muted textOverflow="ellipsis">
-                        {post.kind} · {(post.targets ?? []).length} account(s)
+                    <Stack gap={2}>
+                      <Flex align="center" gap={1}>
+                        {[
+                          ...new Set(
+                            (post.targets ?? []).map((target) => target.platform).filter(Boolean),
+                          ),
+                        ].map((platform) => (
+                          <PlatformIcon key={platform} platform={platform} size={11} />
+                        ))}
+                        <Text size={0} weight="semibold">
+                          {timeLabel(post)}
+                        </Text>
+                      </Flex>
+                      <Text size={0} textOverflow="ellipsis">
+                        {post.title}
                       </Text>
                     </Stack>
                   </Card>
@@ -202,12 +228,19 @@ export function CalendarView(props: {
                     border
                     style={{borderStyle: 'dashed'}}
                   >
-                    <Stack gap={1}>
+                    <Stack gap={2}>
+                      <Flex align="center" gap={1}>
+                        {[...new Set(post.platforms.map((entry) => entry.platform))].map(
+                          (platform) => (
+                            <PlatformIcon key={platform} platform={platform} size={11} />
+                          ),
+                        )}
+                        <Text size={0} muted weight="semibold">
+                          {remoteTimeLabel(post)}
+                        </Text>
+                      </Flex>
                       <Text size={0} muted textOverflow="ellipsis">
-                        {remoteTimeLabel(post)} {post.content ?? 'Zernio post'}
-                      </Text>
-                      <Text size={0} muted textOverflow="ellipsis">
-                        in Zernio · {post.platforms.map((entry) => entry.platform).join(', ')}
+                        {post.content ?? 'in Zernio'}
                       </Text>
                     </Stack>
                   </Card>

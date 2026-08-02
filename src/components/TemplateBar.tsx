@@ -1,3 +1,4 @@
+import {AddIcon} from '@sanity/icons/Add'
 import {Box, Button, Card, Flex, Select, Stack, Text} from '@sanity/ui'
 import {useState} from 'react'
 import {useClient} from 'sanity'
@@ -62,7 +63,7 @@ export function TemplateBar(props: {
   const parts: TemplatePart[] = ['caption', 'firstComment', 'hashtags']
 
   return (
-    <Card padding={3} radius={2} border tone="transparent">
+    <Card padding={3} radius={3} border tone="transparent">
       <Stack gap={3}>
         <Flex gap={2} align="center" wrap="wrap">
           <Text size={1} weight="medium">
@@ -82,7 +83,13 @@ export function TemplateBar(props: {
               ))}
             </Select>
           </Box>
-          <Button text="New template" mode="ghost" fontSize={1} onClick={createTemplate} />
+          <Button
+            text="New"
+            icon={AddIcon}
+            mode="bleed"
+            fontSize={1}
+            onClick={createTemplate}
+          />
         </Flex>
 
         {templates.length === 0 && (

@@ -1,5 +1,7 @@
+import {ComposeIcon} from '@sanity/icons/Compose'
+import {RefreshIcon} from '@sanity/icons/Refresh'
 import {
-  Box,
+  Badge,
   Button,
   Card,
   Container,
@@ -23,6 +25,7 @@ import {Composer} from './Composer'
 import {PostList} from './PostList'
 import {SettingsPanel} from './SettingsPanel'
 import {TemplatePanel} from './TemplatePanel'
+import {ZernioIcon} from './ZernioIcon'
 
 /**
  * Props the plugin hands to the tool.
@@ -79,13 +82,35 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
 
   return (
     <Container width={5} padding={4}>
-      <Stack gap={5}>
-        <Flex align="center" gap={3}>
-          <Heading size={2}>Zernio</Heading>
-          <Box flex={1} />
+      <Stack gap={4}>
+        <Flex align="center" gap={3} wrap="wrap">
+          <Card padding={2} radius={2} tone="primary">
+            <Text size={2}>
+              <ZernioIcon />
+            </Text>
+          </Card>
+          <Stack gap={2} flex={1} style={{minWidth: 200}}>
+            <Flex align="center" gap={2}>
+              <Heading size={2}>Zernio</Heading>
+              {configured ? (
+                <Badge tone="positive">connected</Badge>
+              ) : (
+                <Badge tone="caution">not set up</Badge>
+              )}
+            </Flex>
+            <Text size={1} muted>
+              {posts.length} post{posts.length === 1 ? '' : 's'} in this Studio
+              {remote.length > 0 ? ` · ${remote.length} more in Zernio` : ''}
+            </Text>
+          </Stack>
           {(loading || settingsLoading) && <Spinner muted />}
-          <Button text="Refresh" mode="ghost" onClick={refresh} />
-          <Button text="New post" tone="primary" onClick={() => create()} />
+          <Button text="Refresh" icon={RefreshIcon} mode="bleed" onClick={refresh} />
+          <Button
+            text="New post"
+            icon={ComposeIcon}
+            tone="primary"
+            onClick={() => create()}
+          />
         </Flex>
 
         {remoteError && (
@@ -172,7 +197,13 @@ export function ZernioTool(props: {options?: ZernioToolProps}): React.JSX.Elemen
         </TabPanel>
 
         <TabPanel id="posts-panel" aria-labelledby="posts-tab" hidden={tab !== 'posts'}>
-          <PostList posts={posts} remote={remote} onOpen={open} onChanged={refresh} />
+          <PostList
+            posts={posts}
+            remote={remote}
+            onOpen={open}
+            onChanged={refresh}
+            onCreate={() => create()}
+          />
         </TabPanel>
 
         <TabPanel id="templates-panel" aria-labelledby="templates-tab" hidden={tab !== 'templates'}>

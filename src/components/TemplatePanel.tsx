@@ -1,9 +1,13 @@
+import {AddIcon} from '@sanity/icons/Add'
+import {EditIcon} from '@sanity/icons/Edit'
+import {TrashIcon} from '@sanity/icons/Trash'
 import {Badge, Box, Button, Card, Flex, Radio, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {useCallback, useState} from 'react'
 import {useClient} from 'sanity'
 
 import {useTemplates} from '../hooks/useTemplates'
 import {hashtagLine, type TemplateValue} from '../lib/templates'
+import {EmptyState, Field, Section} from './ui'
 
 const API_VERSION = '2024-10-01'
 
@@ -48,47 +52,38 @@ function TemplateForm(props: {
   }
 
   return (
-    <Card padding={4} radius={2} border>
+    <Section title={template._id ? 'Edit template' : 'New template'} tone="transparent">
       <Stack gap={4}>
-        <Stack gap={2}>
-          <Text size={1} weight="medium">
-            Name
-          </Text>
+        <Field label="Name">
           <TextInput value={title} onChange={(event) => setTitle(event.currentTarget.value)} />
-        </Stack>
+        </Field>
 
-        <Stack gap={2}>
-          <Text size={1} weight="medium">
-            Caption
-          </Text>
+        <Field
+          label="Caption"
+          description={`{{title}}, {{date}}, {{time}}, {{kind}} and {{accounts}} are filled in when the template is applied. Anything else stays visible.`}
+        >
           <TextArea
             rows={5}
             value={caption}
             onChange={(event) => setCaption(event.currentTarget.value)}
             placeholder="Out now: {{title}} — from {{date}}"
           />
-          <Text size={0} muted>
-            {'{{title}}'}, {'{{date}}'}, {'{{time}}'}, {'{{kind}}'} and {'{{accounts}}'} are filled
-            in when the template is applied. Anything else stays visible.
-          </Text>
-        </Stack>
+        </Field>
 
-        <Stack gap={2}>
-          <Text size={1} weight="medium">
-            First comment
-          </Text>
+        <Field label="First comment">
           <TextArea
             rows={2}
             value={firstComment}
             onChange={(event) => setFirstComment(event.currentTarget.value)}
             placeholder="All links in the bio"
           />
-        </Stack>
+        </Field>
 
-        <Stack gap={2}>
-          <Text size={1} weight="medium">
-            Hashtags
-          </Text>
+        <Field
+          label="Hashtags"
+          hint={hashtagLine(parseTags(tags)) ? `${parseTags(tags).length} tags` : undefined}
+          description="Separated by spaces or commas, with or without the #."
+        >
           <TextArea
             rows={3}
             value={tags}
@@ -96,15 +91,11 @@ function TemplateForm(props: {
             placeholder="metal newrelease livemusic"
           />
           <Text size={0} muted>
-            Separated by spaces or commas, with or without the #. Preview:{' '}
-            {hashtagLine(parseTags(tags)) || '—'}
+            {hashtagLine(parseTags(tags)) || 'Nothing yet'}
           </Text>
-        </Stack>
+        </Field>
 
-        <Stack gap={2}>
-          <Text size={1} weight="medium">
-            Put the hashtags in
-          </Text>
+        <Field label="Put the hashtags in">
           <Flex gap={4}>
             <Flex align="center" gap={2}>
               <Radio
@@ -123,7 +114,7 @@ function TemplateForm(props: {
               <Text size={1}>The first comment</Text>
             </Flex>
           </Flex>
-        </Stack>
+        </Field>
 
         <Flex gap={2} wrap="wrap">
           <Button text="Save" tone="primary" disabled={busy} onClick={() => void save()} />
@@ -148,6 +139,7 @@ function TemplateForm(props: {
             template._id && (
               <Button
                 text="Delete"
+                icon={TrashIcon}
                 mode="bleed"
                 tone="critical"
                 fontSize={1}
@@ -157,7 +149,7 @@ function TemplateForm(props: {
           )}
         </Flex>
       </Stack>
-    </Card>
+    </Section>
   )
 }
 
@@ -207,7 +199,12 @@ export function TemplatePanel(props: {templateType: string}): React.JSX.Element 
             composer.
           </Text>
         </Stack>
-        <Button text="New template" tone="primary" onClick={() => setEditing({})} />
+        <Button
+          text="New template"
+          icon={AddIcon}
+          tone="primary"
+          onClick={() => setEditing({})}
+        />
       </Flex>
 
       {editing && (
@@ -221,16 +218,23 @@ export function TemplatePanel(props: {templateType: string}): React.JSX.Element 
       )}
 
       {!loading && templates.length === 0 && !editing && (
-        <Card padding={4} radius={2} border tone="transparent">
-          <Text size={1} muted>
-            No templates yet.
-          </Text>
-        </Card>
+        <EmptyState
+          title="No templates yet"
+          description="A template holds a caption, a first comment and a hashtag set — written once, applied whole or in parts."
+          action={
+            <Button
+              text="New template"
+              icon={AddIcon}
+              tone="primary"
+              onClick={() => setEditing({})}
+            />
+          }
+        />
       )}
 
       <Stack gap={2}>
         {templates.map((template) => (
-          <Card key={template._id} padding={3} radius={2} border>
+          <Card key={template._id} padding={3} radius={3} border>
             <Flex align="center" gap={3} wrap="wrap">
               <Stack gap={2} flex={1} style={{minWidth: 200}}>
                 <Flex align="center" gap={2}>
@@ -247,7 +251,12 @@ export function TemplatePanel(props: {templateType: string}): React.JSX.Element 
                   {(template.caption ?? '').slice(0, 120) || 'no caption'}
                 </Text>
               </Stack>
-              <Button text="Edit" mode="ghost" onClick={() => setEditing(template)} />
+              <Button
+                text="Edit"
+                icon={EditIcon}
+                mode="ghost"
+                onClick={() => setEditing(template)}
+              />
             </Flex>
           </Card>
         ))}

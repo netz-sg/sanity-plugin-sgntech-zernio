@@ -1,4 +1,5 @@
-import {Badge, Box, Button, Card, Flex, Heading, Stack, Text, TextInput} from '@sanity/ui'
+import {RefreshIcon} from '@sanity/icons/Refresh'
+import {Badge, Box, Button, Card, Flex, Stack, Text, TextInput} from '@sanity/ui'
 import {useCallback, useState} from 'react'
 import {useClient} from 'sanity'
 
@@ -6,6 +7,8 @@ import {useZernioSettings} from '../hooks/useZernio'
 import {ZernioClient} from '../lib/client'
 import {cacheAccounts, clearSetting, keyWarning} from '../lib/settings'
 import type {ZernioProfile} from '../lib/types'
+import {PlatformIcon} from './PlatformIcon'
+import {EmptyState, Field, Section} from './ui'
 
 const API_VERSION = '2024-10-01'
 const PLATFORMS = ['instagram', 'facebook']
@@ -137,16 +140,12 @@ export function SettingsPanel(): React.JSX.Element {
   const accounts = settings.accounts ?? []
 
   return (
-    <Stack gap={5}>
-      <Stack gap={3}>
-        <Heading size={1}>API key</Heading>
-        <Card padding={3} radius={2} tone="caution" border>
-          <Text size={1}>
-            The key is stored in this dataset. Everyone who can read the dataset can use it. Use a
-            key limited to one profile, with write access only and an expiry date.
-          </Text>
-        </Card>
-
+    <Stack gap={3}>
+      <Section
+        title="API key"
+        description="Stored in this dataset — everyone who can read the dataset can use it. Use a key limited to one profile, write access only, with an expiry date."
+        actions={settings.apiKey ? <Badge tone="positive">stored</Badge> : undefined}
+      >
         <Flex gap={2}>
           <Box flex={1}>
             <TextInput
@@ -165,19 +164,16 @@ export function SettingsPanel(): React.JSX.Element {
         </Flex>
 
         {settings.apiKey && (
-          <Text size={1} muted>
-            A key is stored (…{settings.apiKey.slice(-6)}).
+          <Text size={0} muted>
+            Ends in …{settings.apiKey.slice(-6)}.
           </Text>
         )}
-      </Stack>
+      </Section>
 
-      <Stack gap={3}>
-        <Heading size={1}>Profile</Heading>
-        <Text size={1} muted>
-          A profile narrows which accounts are loaded. Leave it unset to see every account of the
-          Zernio workspace — that is the right choice for most Studios.
-        </Text>
-
+      <Section
+        title="Profile"
+        description="A profile narrows which accounts are loaded. Leave it unset to see every account of the Zernio workspace — the right choice for most Studios."
+      >
         <Flex gap={2} align="center" wrap="wrap">
           <Button
             text="Load profiles"
@@ -240,14 +236,23 @@ export function SettingsPanel(): React.JSX.Element {
             onClick={createProfile}
           />
         </Flex>
-      </Stack>
+      </Section>
 
-      <Stack gap={3}>
-        <Heading size={1}>Accounts</Heading>
-        <Text size={1} muted>
-          Accounts that are already connected in Zernio only need a reload — connecting is for
-          adding a new one.
-        </Text>
+      <Section
+        title="Accounts"
+        description="Accounts already connected in Zernio only need a reload — connecting is for adding a new one."
+        actions={
+          <Button
+            text="Reload"
+            icon={RefreshIcon}
+            tone="primary"
+            fontSize={1}
+            disabled={!settings.apiKey || busy === 'accounts'}
+            loading={busy === 'accounts'}
+            onClick={refreshAccounts}
+          />
+        }
+      >
         <Flex gap={2} wrap="wrap">
           {PLATFORMS.map((platform) => (
             <Button
@@ -258,19 +263,13 @@ export function SettingsPanel(): React.JSX.Element {
               onClick={() => connect(platform)}
             />
           ))}
-          <Button
-            text="Reload accounts"
-            tone="primary"
-            disabled={!settings.apiKey || busy === 'accounts'}
-            onClick={refreshAccounts}
-          />
         </Flex>
 
         {accounts.length === 0 ? (
-          <Text size={1} muted>
-            No accounts loaded yet. If Zernio already has connected accounts, press “Reload
-            accounts” — and if the list stays empty, a profile filter may be hiding them.
-          </Text>
+          <EmptyState
+            title="No accounts loaded yet"
+            description="If Zernio already has connected accounts, press “Reload”. If the list stays empty, a profile filter is usually hiding them."
+          />
         ) : (
           <Box
             style={{
@@ -280,9 +279,10 @@ export function SettingsPanel(): React.JSX.Element {
             }}
           >
             {accounts.map((account) => (
-              <Card key={account.accountId} padding={3} radius={2} border>
+              <Card key={account.accountId} padding={3} radius={3} border>
                 <Flex align="center" gap={3}>
-                  <Stack gap={2} flex={1}>
+                  <PlatformIcon platform={account.platform} size={16} />
+                  <Stack gap={2} flex={1} style={{minWidth: 0}}>
                     <Text size={1} weight="medium">
                       {account.name ?? account.username ?? account.accountId}
                     </Text>
@@ -297,23 +297,20 @@ export function SettingsPanel(): React.JSX.Element {
             ))}
           </Box>
         )}
-      </Stack>
+      </Section>
 
-      <Stack gap={3}>
-        <Heading size={1}>Defaults</Heading>
-        <Flex gap={2}>
-          <Box flex={1}>
-            <TextInput
-              value={settings.timezone ?? ''}
-              onChange={(event) => save({timezone: event.currentTarget.value})}
-              placeholder="Europe/Berlin"
-            />
-          </Box>
-        </Flex>
-        <Text size={1} muted>
-          Timezone new posts start with. Zernio reads the scheduled time in this zone.
-        </Text>
-      </Stack>
+      <Section title="Defaults">
+        <Field
+          label="Timezone"
+          description="What new posts start with. Zernio reads the scheduled time in this zone."
+        >
+          <TextInput
+            value={settings.timezone ?? ''}
+            onChange={(event) => save({timezone: event.currentTarget.value})}
+            placeholder="Europe/Berlin"
+          />
+        </Field>
+      </Section>
 
       {note && (
         <Card padding={3} radius={2} border tone={note.tone}>

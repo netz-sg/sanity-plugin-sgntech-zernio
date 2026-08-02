@@ -1,5 +1,7 @@
 import {Badge, Box, Card, Flex, Inline, Stack, Text} from '@sanity/ui'
 
+import {PlatformIcon} from './PlatformIcon'
+
 import {deliveryUrl, isVideo, KIND_GEOMETRY, willBeCropped} from '../lib/media'
 import {platformsOf, rulesFor, usableMedia, validatePost} from '../lib/rules'
 import type {PostKind, SocialPostValue} from '../lib/types'
@@ -41,26 +43,30 @@ function Frame(props: {
   const cropped = willBeCropped(first, platform, kind)
 
   // The frame is scaled down but keeps the real ratio — that is the whole point.
-  const width = kind === 'story' || kind === 'reel' ? 150 : 210
+  const width = kind === 'story' || kind === 'reel' ? 160 : 220
 
   return (
     <Stack gap={3}>
       <Flex align="center" gap={2}>
-        <Text size={1} weight="medium">
+        <PlatformIcon platform={platform} size={14} />
+        <Text size={1} weight="medium" style={{textTransform: 'capitalize'}}>
           {platform}
         </Text>
-        <Badge tone="primary">{kind}</Badge>
-        {media.length > 1 && <Badge>{media.length} items</Badge>}
+        <Badge tone="primary" fontSize={0}>
+          {kind}
+        </Badge>
+        {media.length > 1 && <Badge fontSize={0}>{media.length}</Badge>}
       </Flex>
 
       <Box
         style={{
           width,
           aspectRatio: `${geometry.width} / ${geometry.height}`,
-          background: 'var(--card-muted-fg-color, #ccc)',
-          borderRadius: 4,
+          background: 'var(--card-muted-bg-color, rgba(127,127,127,.15))',
+          borderRadius: 10,
           overflow: 'hidden',
           position: 'relative',
+          boxShadow: '0 1px 3px rgba(0,0,0,.25)',
         }}
       >
         {src && !isVideo(first) && (
@@ -87,6 +93,17 @@ function Frame(props: {
       <Box style={{width}}>
         <Caption text={(value.content ?? '').trim()} foldAt={rules.foldAt} />
       </Box>
+
+      {value.firstComment && (kind === 'feed' || kind === 'carousel') && (
+        <Card padding={2} radius={2} tone="transparent" border style={{width}}>
+          <Stack gap={2}>
+            <Text size={0} muted weight="medium">
+              First comment
+            </Text>
+            <Text size={0}>{value.firstComment}</Text>
+          </Stack>
+        </Card>
+      )}
 
       {cropped && (
         <Text size={0} muted>
@@ -115,9 +132,11 @@ export function PostPreview(props: {value: SocialPostValue}): React.JSX.Element 
   return (
     <Stack gap={4}>
       {platforms.length === 0 ? (
-        <Text size={1} muted>
-          Pick an account to see the preview.
-        </Text>
+        <Card padding={4} radius={2} border tone="transparent">
+          <Text size={1} muted>
+            Pick an account to see how the post will look.
+          </Text>
+        </Card>
       ) : (
         <Inline gap={5}>
           {platforms.map((platform) => (

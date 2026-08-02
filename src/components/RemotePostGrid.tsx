@@ -1,18 +1,10 @@
-import {Badge, Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
+import {Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
 import {useState} from 'react'
 
 import {remoteTimeLabel} from '../lib/calendar'
 import type {RemotePost} from '../lib/types'
 import {PlatformIcon} from './PlatformIcon'
-
-const STATUS_TONE: Record<string, 'default' | 'primary' | 'positive' | 'caution' | 'critical'> = {
-  draft: 'default',
-  scheduled: 'primary',
-  publishing: 'caution',
-  published: 'positive',
-  partial: 'caution',
-  failed: 'critical',
-}
+import {StatusPill} from './ui'
 
 const PAGE = 24
 
@@ -33,7 +25,7 @@ function RemoteCard(props: {post: RemotePost}): React.JSX.Element {
   const links = post.platforms.filter((entry) => entry.url)
 
   return (
-    <Card radius={2} border overflow="hidden">
+    <Card radius={3} border overflow="hidden">
       <Box
         style={{
           aspectRatio: '1 / 1',
@@ -57,9 +49,7 @@ function RemoteCard(props: {post: RemotePost}): React.JSX.Element {
         )}
 
         <Box style={{position: 'absolute', top: 8, left: 8}}>
-          <Badge tone={STATUS_TONE[post.status ?? 'draft'] ?? 'default'}>
-            {post.status ?? 'draft'}
-          </Badge>
+          <StatusPill status={post.status} />
         </Box>
       </Box>
 
