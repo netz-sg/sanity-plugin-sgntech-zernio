@@ -60,7 +60,7 @@ Five steps, about ten minutes, no code beyond the config block.
 npm install sanity-plugin-sgntech-zernio
 ```
 
-Sanity Studio v5 or v6, React 18 or 19. Nothing else to install — `@sanity/ui` and `@sanity/icons`
+Sanity Studio 6.9.2 or newer (Sanity UI v4) and React 19.2. For Studio v5 or older v6 releases, install version 1.x. Nothing else to install — `@sanity/ui` and `@sanity/icons`
 come with the Studio.
 
 ### 2. Add it to the config
